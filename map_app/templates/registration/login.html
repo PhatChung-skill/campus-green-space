@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Đăng nhập hệ thống</title>
+</head>
+<body style="font-family: Arial; text-align: center; margin-top: 100px;">
+    <h2>Đăng nhập Cổng Không gian xanh</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" style="padding: 10px 20px;">Đăng nhập</button>
+    </form>
+</body>
+</html>

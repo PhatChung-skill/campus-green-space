@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cổng Không gian xanh - HCMUNRE</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Tải thư viện CSS của Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        /* Cho bản đồ tràn viền 100% màn hình */
+        body { margin: 0; padding: 0; }
+        #map { width: 100vw; height: 100vh; }
+    </style>
+</head>
+<body>
+    <!-- Khung chứa bản đồ -->
+    <div id="map"></div>
+
+    <!-- Tải thư viện JS của Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // 1. Khởi tạo bản đồ, focus thẳng về cơ sở Lê Văn Sỹ
+        var map = L.map('map').setView([10.7936, 106.6661], 18);
+
+        // 2. Thêm lớp bản đồ nền từ OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 22,
+            attribution: '© Dữ liệu bản đồ HCMUNRE'
+        }).addTo(map);
+
+        // 3. Nhận dữ liệu GeoJSON từ Django an toàn
+        var campusesData = JSON.parse('{{ campuses_geojson|escapejs }}');
+        var buildingsData = JSON.parse('{{ buildings_geojson|escapejs }}');
+
+        // 4. Vẽ ranh giới Khuôn viên (Campus) - Màu xanh lá trong suốt
+        L.geoJSON(campusesData, {
+            style: function (feature) {
+                return {color: "#28a745", weight: 3, fillOpacity: 0.1};
+            },
+            onEachFeature: function (feature, layer) {
+                layer.bindPopup("<b>Khuôn viên:</b> " + feature.properties.name);
+            }
+        }).addTo(map);
+
+        // 5. Vẽ các Tòa nhà (Building) - Màu xanh dương đậm hơn
+        L.geoJSON(buildingsData, {
+            style: function (feature) {
+                return {color: "#007bff", weight: 2, fillOpacity: 0.6};
+            },
+            onEachFeature: function (feature, layer) {
+                layer.bindPopup("<b>Tòa nhà:</b> " + feature.properties.name);
+            }
+        }).addTo(map);
+    </script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trang tổng quan - HCMUNRE</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f7f6; }
+        .navbar { 
+            background-color: #004d40; 
+            padding: 15px 30px; 
+            color: white; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+        }
+        .navbar a { 
+            color: white; 
+            text-decoration: none; 
+            font-weight: bold; 
+            background: #28a745;
+            padding: 8px 15px;
+            border-radius: 5px;
+        }
+        .content { text-align: center; margin-top: 100px; }
+        .role-text { color: #d32f2f; font-weight: bold; }
+        .logout-btn { 
+            margin-top: 20px; padding: 10px 20px; 
+            background: #555; color: white; 
+            border: none; border-radius: 5px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- Thanh điều hướng -->
+    <div class="navbar">
+        <span>Cổng Thông Tin Quản Lý Không Gian Xanh</span>
+        <a href="/map/">🌍 Xem Bản đồ</a>
+    </div>
+
+    <!-- Nội dung chào mừng -->
+    <div class="content">
+        <h1>Chào mừng bạn, {{ username }}!</h1>
+        <h3>Vai trò của bạn trong hệ thống là: <span class="role-text">{{ role }}</span></h3>
+        
+        <form action="{% url 'logout' %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="logout-btn">Đăng xuất</button>
+        </form>
+    </div>
+</body>
+</html>
