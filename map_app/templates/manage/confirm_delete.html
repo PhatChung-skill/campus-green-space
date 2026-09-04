@@ -1,0 +1,17 @@
+{% extends "manage/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block subtitle %}Thao tác này không hoàn tác được{% endblock %}
+
+{% block content %}
+<div class="form-card confirm-card">
+    <p>Bạn chắc chắn muốn xóa <strong>{{ object_label }}</strong>?</p>
+    <form method="post">
+        {% csrf_token %}
+        <div class="actions">
+            <a class="btn btn-line" href="{{ cancel_url }}">Quay lại</a>
+            <button class="btn btn-danger" type="submit">Xóa vĩnh viễn</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

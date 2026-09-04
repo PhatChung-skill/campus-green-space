@@ -1,0 +1,55 @@
+{% extends "manage/base.html" %}
+{% load static %}
+{% block title %}{% if is_create %}Thêm vai trò{% else %}Sửa vai trò{% endif %}{% endblock %}
+{% block heading %}{% if is_create %}Thêm vai trò{% else %}Sửa vai trò{% endif %}{% endblock %}
+
+{% block subtitle %}{% if is_create %}Tạo nhóm quyền mới cho cổng quản lý{% else %}Điều chỉnh quyền xem / thêm / sửa / xóa{% endif %}{% endblock %}
+
+{% block content %}
+<form method="post" class="form-card">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% if role and role.is_system %}
+    <div class="flash flash-info" style="margin:16px 24px 0">Đây là vai trò hệ thống: không đổi tên và không xóa được.</div>
+    {% endif %}
+    <div class="form-grid">
+        <div class="field">
+            <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+            {{ form.name }}
+            {{ form.name.errors }}
+        </div>
+        <div class="field">
+            <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+            {{ form.description }}
+            {{ form.description.errors }}
+        </div>
+    </div>
+    <div class="perm-grid">
+        {% for group_name, fields in role_groups %}
+        <section class="perm-box" data-perm-group>
+            <div class="perm-head">
+                <h3>{{ group_name }}</h3>
+                <button class="btn btn-line btn-tiny" type="button" data-toggle-group>Chọn hết</button>
+            </div>
+            {% for field in fields %}
+            <label class="check-row">
+                {{ field }}
+                <span>{{ field.label }}</span>
+            </label>
+            {{ field.errors }}
+            {% endfor %}
+        </section>
+        {% endfor %}
+    </div>
+    <div class="form-grid">
+        <div class="actions">
+            <a class="btn btn-line" href="{% url 'portal_roles' %}">Hủy</a>
+            <button class="btn btn-primary" type="submit">Lưu quyền</button>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'map_app/js/role-form.js' %}"></script>
+{% endblock %}

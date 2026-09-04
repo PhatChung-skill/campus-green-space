@@ -1,0 +1,78 @@
+{% extends "manage/base.html" %}
+{% load static %}
+{% block title %}Bảng điều khiển{% endblock %}
+{% block heading %}Bảng điều khiển{% endblock %}
+{% block subtitle %}Theo dõi dữ liệu không gian xanh Trường Đại học Tài nguyên và Môi trường TP.HCM{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+
+{% block content %}
+<div class="stats">
+    {% for item in stats %}
+    <a class="stat-card stat-link" href="{{ item.url }}">
+        <span>{{ item.label }}</span>
+        <strong>{{ item.value }}</strong>
+        <em>{{ item.hint }}</em>
+    </a>
+    {% endfor %}
+</div>
+
+{% if quick_adds %}
+<section class="quick-row">
+    <h3>Thao tác nhanh</h3>
+    <div class="quick-actions">
+        {% for action in quick_adds %}
+        <a class="btn btn-ghost" href="{{ action.url }}">{{ action.label }}</a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<div class="dash-grid">
+    <section class="hero-note">
+        <h3>Hướng dẫn nhanh</h3>
+        <ul class="guide-list">
+            <li>Menu trái chỉ hiện các mục bạn được phân quyền xem.</li>
+            <li>Khi thêm tòa nhà, tầng, phòng, bãi xe hoặc cây, hãy chọn đối tượng cha rồi vẽ đúng trên ranh giới gợi ý (nét đứt).</li>
+            <li>Đa giác dùng cho khuôn viên / tòa / tầng / bãi xe / mảng xanh. Điểm dùng cho phòng và cây xanh.</li>
+            <li>Vai trò hệ thống không xóa được; không thể xóa quản trị viên cuối cùng.</li>
+        </ul>
+    </section>
+    <section class="form-card">
+        <div class="map-caption">
+            <h3>Khuôn viên trên bản đồ</h3>
+            <a class="btn btn-line" href="{% url 'map_view' %}">Mở bản đồ đầy đủ</a>
+        </div>
+        {% if campus_count %}
+        <div id="dash-map" class="map-box map-box-sm"></div>
+        {% else %}
+        <div class="empty">Chưa có cơ sở. Hãy thêm khuôn viên đầu tiên để hiển thị bản đồ.</div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if campus_count %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const dashMap = L.map("dash-map").setView([10.7936, 106.6661], 16);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 22,
+        attribution: "© OpenStreetMap"
+    }).addTo(dashMap);
+    const data = JSON.parse("{{ campuses_geojson|escapejs }}");
+    const layer = L.geoJSON(data, {
+        style: { color: "#1f7a4d", weight: 2, fillOpacity: 0.18 },
+        onEachFeature: function (feature, lyr) {
+            lyr.bindPopup(feature.properties.name || "Cơ sở");
+        }
+    }).addTo(dashMap);
+    if (layer.getBounds().isValid()) {
+        dashMap.fitBounds(layer.getBounds(), { padding: [20, 20], maxZoom: 18 });
+    }
+    setTimeout(function () { dashMap.invalidateSize(); }, 200);
+</script>
+{% endif %}
+{% endblock %}

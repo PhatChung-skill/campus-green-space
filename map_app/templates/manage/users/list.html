@@ -1,0 +1,62 @@
+{% extends "manage/base.html" %}
+{% block title %}Người dùng{% endblock %}
+{% block heading %}Người dùng{% endblock %}
+{% block subtitle %}{{ page_obj.paginator.count }} tài khoản · vai trò và trạng thái đăng nhập{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="search" method="get">
+        <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Tìm theo tên, email...">
+        <button class="btn btn-ghost" type="submit">Tìm</button>
+    </form>
+    {% if can_add %}
+    <a class="btn btn-primary" href="{% url 'portal_user_create' %}">Thêm người dùng</a>
+    {% endif %}
+</div>
+<div class="table-card table-wrap">
+    {% if page_obj.object_list %}
+    <table>
+        <thead>
+            <tr>
+                <th>Tên đăng nhập</th>
+                <th>Họ tên</th>
+                <th>Email</th>
+                <th>Điện thoại</th>
+                <th>Vai trò</th>
+                <th>Trạng thái</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in page_obj %}
+            <tr>
+                <td>{{ u.username }}</td>
+                <td>{{ u.get_full_name|default:"—" }}</td>
+                <td>{{ u.email|default:"—" }}</td>
+                <td>{{ u.profile.phone|default:"—" }}</td>
+                <td>
+                    {% if u.profile.role %}
+                    <span class="badge">{{ u.profile.role.name }}</span>
+                    {% else %}—{% endif %}
+                </td>
+                <td>{% if u.is_active %}Hoạt động{% else %}Khóa{% endif %}</td>
+                <td>
+                    <div class="actions">
+                        {% if can_change %}
+                        <a class="btn btn-ghost" href="{% url 'portal_user_edit' u.pk %}">Sửa</a>
+                        {% endif %}
+                        {% if can_delete %}
+                        <a class="btn btn-danger" href="{% url 'portal_user_delete' u.pk %}">Xóa</a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% include "manage/_pager.html" %}
+    {% else %}
+    <div class="empty">Không có người dùng phù hợp.</div>
+    {% endif %}
+</div>
+{% endblock %}

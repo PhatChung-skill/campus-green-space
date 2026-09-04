@@ -22,14 +22,13 @@ ALLOWED_HOSTS = []
 
 # Application definition
 INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.gis',  # Kích hoạt lõi bản đồ GeoDjango
-    'map_app',             # Khai báo app đồ án của bạn
+    'django.contrib.gis',
+    'map_app.apps.MapAppConfig',
 ]
 
 MIDDLEWARE = [
@@ -54,6 +53,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'map_app.context_processors.portal',
             ],
         },
     },
@@ -90,8 +90,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = 'vi'
+TIME_ZONE = 'Asia/Ho_Chi_Minh'
 USE_I18N = True
 USE_TZ = True
 
@@ -125,5 +125,6 @@ if os.name == 'nt':
 
 
 # Cấu hình điều hướng Đăng nhập / Đăng xuất
-LOGIN_REDIRECT_URL = '/map/dashboard/'  
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/quan-tri/'
 LOGOUT_REDIRECT_URL = '/login/'

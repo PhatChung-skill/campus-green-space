@@ -1,31 +1,17 @@
-from django.shortcuts import render, redirect
 from django.core.serializers import serialize
-from django.contrib.auth.decorators import login_required
-from .models import Campus, Building
+from django.shortcuts import render
+
+from .models import Building, Campus, Floor, GreenArea, ParkingArea, Room, Tree
+
 
 def map_view(request):
-    campuses_geojson = serialize('geojson', Campus.objects.all())
-    buildings_geojson = serialize('geojson', Building.objects.all())
     context = {
-        'campuses_geojson': campuses_geojson,
-        'buildings_geojson': buildings_geojson,
+        "campuses_geojson": serialize("geojson", Campus.objects.all()),
+        "buildings_geojson": serialize("geojson", Building.objects.all()),
+        "floors_geojson": serialize("geojson", Floor.objects.all()),
+        "rooms_geojson": serialize("geojson", Room.objects.all()),
+        "parkings_geojson": serialize("geojson", ParkingArea.objects.all()),
+        "greens_geojson": serialize("geojson", GreenArea.objects.all()),
+        "trees_geojson": serialize("geojson", Tree.objects.all()),
     }
-    return render(request, 'map_app/map.html', context)
-
-@login_required
-def dashboard_view(request):
-    # 1. Đã sửa lỗi dư chữ "request" ở dòng dưới đây
-    if request.user.is_superuser:
-        return redirect('/admin/')
-
-    # 2. Nếu là Staff (Dựa vào ô tích Staff status) hoặc Student
-    if request.user.is_staff:
-        role = "Nhân viên Cơ sở vật chất (Staff)"
-    else:
-        role = "Khách (Guest/Student)"
-
-    context = {
-        'username': request.user.username,
-        'role': role
-    }
-    return render(request, 'map_app/dashboard.html', context)
+    return render(request, "map_app/map.html", context)

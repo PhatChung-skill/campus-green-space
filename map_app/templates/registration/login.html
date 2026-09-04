@@ -1,14 +1,38 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-    <title>Đăng nhập hệ thống</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Đăng nhập · Cổng không gian xanh HCMUNRE</title>
+    {% load static %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'map_app/css/portal.css' %}">
 </head>
-<body style="font-family: Arial; text-align: center; margin-top: 100px;">
-    <h2>Đăng nhập Cổng Không gian xanh</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" style="padding: 10px 20px;">Đăng nhập</button>
-    </form>
+<body class="auth-page">
+    <div class="auth-card">
+        <p class="badge">HCMUNRE</p>
+        <h1>Cổng không gian xanh</h1>
+        <p class="lead">Đăng nhập để quản lý hoặc tra cứu khuôn viên trường Đại học Tài nguyên và Môi trường TP.HCM.</p>
+        {% if form.non_field_errors %}
+            <div class="flash flash-error">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+            <div class="field" style="margin-bottom:14px">
+                <label for="id_username">Tên đăng nhập</label>
+                {{ form.username }}
+                {{ form.username.errors }}
+            </div>
+            <div class="field" style="margin-bottom:18px">
+                <label for="id_password">Mật khẩu</label>
+                {{ form.password }}
+                {{ form.password.errors }}
+            </div>
+            <button class="btn btn-primary" type="submit" style="width:100%">Vào hệ thống</button>
+        </form>
+        <p style="text-align:center;margin:18px 0 0"><a href="{% url 'map_view' %}">Xem bản đồ công khai</a></p>
+    </div>
 </body>
 </html>

@@ -1,57 +1,115 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
     <title>Cổng Không gian xanh - HCMUNRE</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Tải thư viện CSS của Leaflet -->
+    {% load static %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="{% static 'map_app/css/portal.css' %}">
     <style>
-        /* Cho bản đồ tràn viền 100% màn hình */
         body { margin: 0; padding: 0; }
         #map { width: 100vw; height: 100vh; }
+        .map-overlay .btn { box-shadow: 0 8px 24px rgba(11,61,46,.25); }
+        .leaflet-control-layers { border-radius: 12px !important; }
     </style>
 </head>
 <body>
-    <!-- Khung chứa bản đồ -->
+    <div class="map-overlay">
+        <div class="user-chip" style="background:#14532d;color:#fff;border:0">Cổng không gian xanh · HCMUNRE</div>
+        <div class="top-actions">
+            {% if user.is_authenticated %}
+                {% if can_access_portal %}
+                <a class="btn btn-primary" href="{% url 'portal_home' %}">Trang quản lý</a>
+                {% else %}
+                <a class="btn btn-primary" href="{% url 'dashboard' %}">Tài khoản</a>
+                {% endif %}
+            {% else %}
+                <a class="btn btn-primary" href="{% url 'login' %}">Đăng nhập</a>
+            {% endif %}
+        </div>
+    </div>
     <div id="map"></div>
 
-    <!-- Tải thư viện JS của Leaflet -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // 1. Khởi tạo bản đồ, focus thẳng về cơ sở Lê Văn Sỹ
         var map = L.map('map').setView([10.7936, 106.6661], 18);
 
-        // 2. Thêm lớp bản đồ nền từ OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 22,
             attribution: '© Dữ liệu bản đồ HCMUNRE'
         }).addTo(map);
 
-        // 3. Nhận dữ liệu GeoJSON từ Django an toàn
-        var campusesData = JSON.parse('{{ campuses_geojson|escapejs }}');
-        var buildingsData = JSON.parse('{{ buildings_geojson|escapejs }}');
+        function layerFrom(jsonText, options) {
+            return L.geoJSON(JSON.parse(jsonText), options);
+        }
 
-        // 4. Vẽ ranh giới Khuôn viên (Campus) - Màu xanh lá trong suốt
-        L.geoJSON(campusesData, {
-            style: function (feature) {
-                return {color: "#28a745", weight: 3, fillOpacity: 0.1};
-            },
+        var campuses = layerFrom('{{ campuses_geojson|escapejs }}', {
+            style: {color: "#1f7a4d", weight: 3, fillOpacity: 0.08},
             onEachFeature: function (feature, layer) {
                 layer.bindPopup("<b>Khuôn viên:</b> " + feature.properties.name);
             }
-        }).addTo(map);
-
-        // 5. Vẽ các Tòa nhà (Building) - Màu xanh dương đậm hơn
-        L.geoJSON(buildingsData, {
-            style: function (feature) {
-                return {color: "#007bff", weight: 2, fillOpacity: 0.6};
-            },
+        });
+        var buildings = layerFrom('{{ buildings_geojson|escapejs }}', {
+            style: {color: "#0b3d2e", weight: 2, fillColor: "#2f9e63", fillOpacity: 0.5},
             onEachFeature: function (feature, layer) {
                 layer.bindPopup("<b>Tòa nhà:</b> " + feature.properties.name);
             }
-        }).addTo(map);
+        });
+        var greens = layerFrom('{{ greens_geojson|escapejs }}', {
+            style: {color: "#15803d", weight: 1, fillColor: "#4ade80", fillOpacity: 0.45},
+            onEachFeature: function (feature, layer) {
+                layer.bindPopup("<b>Mảng xanh:</b> " + feature.properties.name);
+            }
+        });
+        var parkings = layerFrom('{{ parkings_geojson|escapejs }}', {
+            style: {color: "#1e3a8a", weight: 1, fillColor: "#93c5fd", fillOpacity: 0.45},
+            onEachFeature: function (feature, layer) {
+                layer.bindPopup("<b>Bãi xe:</b> " + feature.properties.name);
+            }
+        });
+        var floors = layerFrom('{{ floors_geojson|escapejs }}', {
+            style: {color: "#854d0e", weight: 1, fillOpacity: 0.08},
+            onEachFeature: function (feature, layer) {
+                layer.bindPopup("<b>Tầng:</b> " + feature.properties.name);
+            }
+        });
+        var rooms = layerFrom('{{ rooms_geojson|escapejs }}', {
+            pointToLayer: function (feature, latlng) {
+                return L.circleMarker(latlng, {radius: 6, color: "#9a3412", fillColor: "#fdba74", fillOpacity: 0.9});
+            },
+            onEachFeature: function (feature, layer) {
+                layer.bindPopup("<b>Phòng:</b> " + feature.properties.name);
+            }
+        });
+        var trees = layerFrom('{{ trees_geojson|escapejs }}', {
+            pointToLayer: function (feature, latlng) {
+                return L.circleMarker(latlng, {radius: 7, color: "#14532d", fillColor: "#22c55e", fillOpacity: 0.95});
+            },
+            onEachFeature: function (feature, layer) {
+                layer.bindPopup("<b>Cây:</b> " + feature.properties.species);
+            }
+        });
+
+        campuses.addTo(map);
+        buildings.addTo(map);
+        greens.addTo(map);
+        parkings.addTo(map);
+        trees.addTo(map);
+
+        L.control.layers(null, {
+            "Khuôn viên": campuses,
+            "Tòa nhà": buildings,
+            "Mảng xanh": greens,
+            "Bãi xe": parkings,
+            "Tầng": floors,
+            "Phòng": rooms,
+            "Cây xanh": trees
+        }, {collapsed: false}).addTo(map);
+
+        if (campuses.getBounds().isValid()) {
+            map.fitBounds(campuses.getBounds(), {padding: [24, 24], maxZoom: 18});
+        }
     </script>
 </body>
 </html>

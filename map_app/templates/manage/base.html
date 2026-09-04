@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% load static %}
+    <title>{% block title %}Quản lý không gian xanh{% endblock %} · HCMUNRE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'map_app/css/portal.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="shell">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-mark">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 3c2.8 3.2 8 6.2 8 11.2A8 8 0 1 1 4 14.2C4 9.2 9.2 6.2 12 3Z" fill="#bbf7d0"/>
+                </svg>
+            </div>
+            <div>
+                <h1>Cổng không gian xanh</h1>
+                <p>HCMUNRE · Trang quản lý</p>
+            </div>
+        </div>
+
+        <nav class="nav">
+            <div class="nav-group">
+                <p class="nav-label">Tổng quan</p>
+                <a href="{% url 'portal_home' %}" class="{% if request.resolver_match.url_name == 'portal_home' %}is-active{% endif %}">Bảng điều khiển</a>
+                <a href="{% url 'map_view' %}">Bản đồ công khai</a>
+            </div>
+            {% if nav_perms.users or nav_perms.roles %}
+            <div class="nav-group">
+                <p class="nav-label">Hệ thống</p>
+                {% if nav_perms.users %}<a href="{% url 'portal_users' %}" class="{% if 'user' in request.resolver_match.url_name %}is-active{% endif %}">Người dùng</a>{% endif %}
+                {% if nav_perms.roles %}<a href="{% url 'portal_roles' %}" class="{% if 'role' in request.resolver_match.url_name %}is-active{% endif %}">Vai trò &amp; quyền</a>{% endif %}
+            </div>
+            {% endif %}
+            {% if nav_perms.campus or nav_perms.building or nav_perms.floor or nav_perms.room or nav_perms.parking %}
+            <div class="nav-group">
+                <p class="nav-label">Hạ tầng</p>
+                {% if nav_perms.campus %}<a href="{% url 'portal_entity_list' 'co-so' %}" class="{% if entity == 'co-so' %}is-active{% endif %}">Cơ sở</a>{% endif %}
+                {% if nav_perms.building %}<a href="{% url 'portal_entity_list' 'toa-nha' %}" class="{% if entity == 'toa-nha' %}is-active{% endif %}">Tòa nhà</a>{% endif %}
+                {% if nav_perms.floor %}<a href="{% url 'portal_entity_list' 'tang' %}" class="{% if entity == 'tang' %}is-active{% endif %}">Tầng</a>{% endif %}
+                {% if nav_perms.room %}<a href="{% url 'portal_entity_list' 'phong' %}" class="{% if entity == 'phong' %}is-active{% endif %}">Phòng</a>{% endif %}
+                {% if nav_perms.parking %}<a href="{% url 'portal_entity_list' 'bai-xe' %}" class="{% if entity == 'bai-xe' %}is-active{% endif %}">Bãi xe</a>{% endif %}
+            </div>
+            {% endif %}
+            {% if nav_perms.greenarea or nav_perms.tree %}
+            <div class="nav-group">
+                <p class="nav-label">Sinh thái</p>
+                {% if nav_perms.greenarea %}<a href="{% url 'portal_entity_list' 'mang-xanh' %}" class="{% if entity == 'mang-xanh' %}is-active{% endif %}">Mảng xanh</a>{% endif %}
+                {% if nav_perms.tree %}<a href="{% url 'portal_entity_list' 'cay-xanh' %}" class="{% if entity == 'cay-xanh' %}is-active{% endif %}">Cây xanh</a>{% endif %}
+            </div>
+            {% endif %}
+        </nav>
+    </aside>
+    <div class="nav-overlay" hidden></div>
+
+    <div class="main">
+        <header class="topbar">
+            <div class="topbar-lead">
+                <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Mở menu">Menu</button>
+                <div>
+                    <h2 class="topbar-title">{% block heading %}Quản lý{% endblock %}</h2>
+                    <p class="topbar-sub">{% block subtitle %}Cổng thông tin tra cứu không gian xanh khu vực trường học{% endblock %}</p>
+                </div>
+            </div>
+            <div class="top-actions">
+                <div class="user-chip">{{ request.user.username }} · {{ user_role_name }}</div>
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button class="btn btn-line" type="submit">Đăng xuất</button>
+                </form>
+            </div>
+        </header>
+
+        <main class="content">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="flash flash-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+<script src="{% static 'map_app/js/portal.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

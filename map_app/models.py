@@ -1,5 +1,5 @@
+from django.conf import settings
 from django.contrib.gis.db import models
-from django.contrib.auth.models import User
 
 # ==========================================
 # NHÓM 1: KHÔNG GIAN HẠ TẦNG (INFRASTRUCTURE)
@@ -108,3 +108,97 @@ class Tree(models.Model):
 
     def __str__(self):
         return f"Cây {self.species} - ID: {self.tree_id}"
+
+
+# ==========================================
+# NHÓM 3: NGƯỜI DÙNG & VAI TRÒ
+# ==========================================
+
+class Role(models.Model):
+    name = models.CharField(max_length=100, unique=True, verbose_name="Tên vai trò")
+    description = models.TextField(blank=True, verbose_name="Mô tả")
+    is_system = models.BooleanField(default=False, verbose_name="Vai trò hệ thống")
+
+    can_access_portal = models.BooleanField(default=False, verbose_name="Truy cập trang quản lý")
+
+    can_view_users = models.BooleanField(default=False, verbose_name="Xem người dùng")
+    can_add_users = models.BooleanField(default=False, verbose_name="Thêm người dùng")
+    can_change_users = models.BooleanField(default=False, verbose_name="Sửa người dùng")
+    can_delete_users = models.BooleanField(default=False, verbose_name="Xóa người dùng")
+
+    can_view_roles = models.BooleanField(default=False, verbose_name="Xem vai trò")
+    can_add_roles = models.BooleanField(default=False, verbose_name="Thêm vai trò")
+    can_change_roles = models.BooleanField(default=False, verbose_name="Sửa vai trò")
+    can_delete_roles = models.BooleanField(default=False, verbose_name="Xóa vai trò")
+
+    can_view_campus = models.BooleanField(default=False, verbose_name="Xem cơ sở")
+    can_add_campus = models.BooleanField(default=False, verbose_name="Thêm cơ sở")
+    can_change_campus = models.BooleanField(default=False, verbose_name="Sửa cơ sở")
+    can_delete_campus = models.BooleanField(default=False, verbose_name="Xóa cơ sở")
+
+    can_view_building = models.BooleanField(default=False, verbose_name="Xem tòa nhà")
+    can_add_building = models.BooleanField(default=False, verbose_name="Thêm tòa nhà")
+    can_change_building = models.BooleanField(default=False, verbose_name="Sửa tòa nhà")
+    can_delete_building = models.BooleanField(default=False, verbose_name="Xóa tòa nhà")
+
+    can_view_floor = models.BooleanField(default=False, verbose_name="Xem tầng")
+    can_add_floor = models.BooleanField(default=False, verbose_name="Thêm tầng")
+    can_change_floor = models.BooleanField(default=False, verbose_name="Sửa tầng")
+    can_delete_floor = models.BooleanField(default=False, verbose_name="Xóa tầng")
+
+    can_view_room = models.BooleanField(default=False, verbose_name="Xem phòng")
+    can_add_room = models.BooleanField(default=False, verbose_name="Thêm phòng")
+    can_change_room = models.BooleanField(default=False, verbose_name="Sửa phòng")
+    can_delete_room = models.BooleanField(default=False, verbose_name="Xóa phòng")
+
+    can_view_parking = models.BooleanField(default=False, verbose_name="Xem bãi xe")
+    can_add_parking = models.BooleanField(default=False, verbose_name="Thêm bãi xe")
+    can_change_parking = models.BooleanField(default=False, verbose_name="Sửa bãi xe")
+    can_delete_parking = models.BooleanField(default=False, verbose_name="Xóa bãi xe")
+
+    can_view_greenarea = models.BooleanField(default=False, verbose_name="Xem mảng xanh")
+    can_add_greenarea = models.BooleanField(default=False, verbose_name="Thêm mảng xanh")
+    can_change_greenarea = models.BooleanField(default=False, verbose_name="Sửa mảng xanh")
+    can_delete_greenarea = models.BooleanField(default=False, verbose_name="Xóa mảng xanh")
+
+    can_view_tree = models.BooleanField(default=False, verbose_name="Xem cây xanh")
+    can_add_tree = models.BooleanField(default=False, verbose_name="Thêm cây xanh")
+    can_change_tree = models.BooleanField(default=False, verbose_name="Sửa cây xanh")
+    can_delete_tree = models.BooleanField(default=False, verbose_name="Xóa cây xanh")
+
+    class Meta:
+        verbose_name = "Vai trò"
+        verbose_name_plural = "Vai trò"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+    def has_perm(self, action, resource):
+        return bool(getattr(self, f"can_{action}_{resource}", False))
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="profile",
+        verbose_name="Tài khoản",
+    )
+    role = models.ForeignKey(
+        Role,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="users",
+        verbose_name="Vai trò",
+    )
+    phone = models.CharField(max_length=20, blank=True, verbose_name="Số điện thoại")
+    notes = models.TextField(blank=True, verbose_name="Ghi chú")
+
+    class Meta:
+        verbose_name = "Hồ sơ người dùng"
+        verbose_name_plural = "Hồ sơ người dùng"
+
+    def __str__(self):
+        return self.user.get_username()

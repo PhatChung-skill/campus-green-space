@@ -1,0 +1,77 @@
+{% extends "manage/base.html" %}
+{% load static %}
+{% block title %}{% if is_create %}Thêm{% else %}Sửa{% endif %} {{ cfg.singular }}{% endblock %}
+{% block heading %}{% if is_create %}Thêm {{ cfg.singular }}{% else %}Sửa {{ cfg.singular }}{% endif %}{% endblock %}
+{% block subtitle %}Điền thông tin rồi vẽ hình học trực tiếp trên bản đồ khuôn viên{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
+{% endblock %}
+
+{% block content %}
+<form method="post" class="form-card split-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="form-pane">
+        <div class="form-grid">
+            {% for field in form %}
+                {% if field.name != "geom_geojson" and field.name not in cfg.media_fields %}
+                <div class="field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {{ field.errors }}
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% if cfg.media_fields %}
+        <details class="media-box" open>
+            <summary>Hình ảnh / liên kết minh họa</summary>
+            <div class="form-grid">
+                {% for field in form %}
+                    {% if field.name in cfg.media_fields %}
+                    <div class="field">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {{ field.errors }}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </details>
+        {% endif %}
+        <div class="actions form-actions">
+            <a class="btn btn-line" href="{% url 'portal_entity_list' entity %}">Hủy</a>
+            <button class="btn btn-primary" type="submit">Lưu</button>
+        </div>
+    </div>
+    <div class="map-pane">
+        <label>Hình học trên bản đồ</label>
+        <p class="map-help">
+            {% if cfg.geom_type == "point" %}
+            Bấm vào bản đồ để chọn vị trí. Có thể kéo điểm để chỉnh lại.
+            {% else %}
+            Dùng biểu tượng đa giác hoặc hình chữ nhật góc trên bên trái bản đồ để vẽ ranh giới, rồi chỉnh đỉnh nếu cần.
+            {% endif %}
+            {% if cfg.parent_field %}
+            Chọn đối tượng cha trên form để hiện ranh giới gợi ý (nét đứt xanh nhạt).
+            {% endif %}
+        </p>
+        {{ form.geom_geojson }}
+        {{ form.geom_geojson.errors }}
+        <div
+            id="geom-map"
+            class="map-box map-box-form"
+            data-geom-type="{{ cfg.geom_type }}"
+            data-parent-field="{{ cfg.parent_field }}"
+            data-parent-url="{% if cfg.parent_entity %}{% url 'portal_parent_geom' cfg.parent_entity 0 %}{% endif %}"
+        ></div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+<script src="{% static 'map_app/js/geom-editor.js' %}"></script>
+{% endblock %}

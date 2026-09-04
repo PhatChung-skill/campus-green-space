@@ -1,0 +1,70 @@
+{% extends "manage/base.html" %}
+{% block title %}{{ cfg.title }}{% endblock %}
+{% block heading %}{{ cfg.title }}{% endblock %}
+{% block subtitle %}{{ page_obj.paginator.count }} bản ghi · danh sách {{ cfg.singular }}{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="search filter-bar" method="get">
+        <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Tìm kiếm...">
+        {% for flt in list_filters %}
+        <select class="form-select" name="{{ flt.param }}">
+            <option value="">Tất cả {{ flt.label|lower }}</option>
+            {% for choice in flt.choices %}
+            <option value="{{ choice.pk }}" {% if flt.selected == choice.pk|stringformat:"s" %}selected{% endif %}>{{ choice }}</option>
+            {% endfor %}
+        </select>
+        {% endfor %}
+        <button class="btn btn-ghost" type="submit">Lọc</button>
+        {% if q or querystring %}
+        <a class="btn btn-line" href="{% url 'portal_entity_list' entity %}">Xóa lọc</a>
+        {% endif %}
+    </form>
+    {% if can_add %}
+    <a class="btn btn-primary" href="{% url 'portal_entity_create' entity %}{% if querystring %}?{{ querystring }}{% endif %}">Thêm {{ cfg.singular }}</a>
+    {% endif %}
+</div>
+
+<div class="table-card table-wrap">
+    {% if rows %}
+    <table>
+        <thead>
+            <tr>
+                {% for _field, label in cfg.list_fields %}
+                <th>{{ label }}</th>
+                {% endfor %}
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                {% for value in row.values %}
+                <td>{{ value }}</td>
+                {% endfor %}
+                <td>
+                    <div class="actions">
+                        {% if can_change %}
+                        <a class="btn btn-ghost" href="{% url 'portal_entity_edit' entity row.pk %}">Sửa</a>
+                        {% endif %}
+                        {% if can_delete %}
+                        <a class="btn btn-danger" href="{% url 'portal_entity_delete' entity row.pk %}">Xóa</a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% include "manage/_pager.html" %}
+    {% else %}
+    <div class="empty">
+        {% if q or querystring %}
+        Không tìm thấy kết quả phù hợp.
+        {% else %}
+        Chưa có dữ liệu. {% if can_add %}Hãy thêm {{ cfg.singular }} đầu tiên.{% endif %}
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

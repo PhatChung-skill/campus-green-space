@@ -1,0 +1,56 @@
+{% extends "manage/base.html" %}
+{% block title %}Vai trò{% endblock %}
+{% block heading %}Vai trò &amp; quyền{% endblock %}
+{% block subtitle %}Phân quyền xem / thêm / sửa / xóa theo từng nhóm dữ liệu{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="search" method="get">
+        <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Tìm vai trò...">
+        <button class="btn btn-ghost" type="submit">Tìm</button>
+    </form>
+    {% if can_add %}
+    <a class="btn btn-primary" href="{% url 'portal_role_create' %}">Thêm vai trò</a>
+    {% endif %}
+</div>
+<div class="table-card table-wrap">
+    {% if page_obj.object_list %}
+    <table>
+        <thead>
+            <tr>
+                <th>Tên vai trò</th>
+                <th>Mô tả</th>
+                <th>Cổng quản lý</th>
+                <th>Hệ thống</th>
+                <th>Số người dùng</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for role in page_obj %}
+            <tr>
+                <td>{{ role.name }}</td>
+                <td>{{ role.description|default:"—" }}</td>
+                <td>{% if role.can_access_portal %}Có{% else %}Không{% endif %}</td>
+                <td>{% if role.is_system %}Có{% else %}Không{% endif %}</td>
+                <td>{{ role.user_count }}</td>
+                <td>
+                    <div class="actions">
+                        {% if can_change %}
+                        <a class="btn btn-ghost" href="{% url 'portal_role_edit' role.pk %}">Sửa</a>
+                        {% endif %}
+                        {% if can_delete and not role.is_system %}
+                        <a class="btn btn-danger" href="{% url 'portal_role_delete' role.pk %}">Xóa</a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% include "manage/_pager.html" %}
+    {% else %}
+    <div class="empty">Chưa có vai trò.</div>
+    {% endif %}
+</div>
+{% endblock %}
