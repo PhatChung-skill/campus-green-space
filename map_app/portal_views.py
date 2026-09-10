@@ -19,7 +19,7 @@ from .catalog import (
     search_queryset,
     user_search_qs,
 )
-from .forms import PortalLoginForm, RoleForm, UserCreateForm, UserUpdateForm
+from .forms import PortalLoginForm, RegisterForm, RoleForm, UserCreateForm, UserUpdateForm
 from .models import Building, Campus, Floor, GreenArea, ParkingArea, Role, Room, Tree, UserProfile
 from .permissions import (
     ADMIN_ROLE_NAME,
@@ -258,21 +258,27 @@ def _role_form_groups(form):
 
 @perm_required("add", "roles")
 def role_create(request):
-    form = RoleForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(request, "Đã tạo vai trò mới.")
-        return redirect("portal_roles")
-    return render(
-        request,
-        "manage/roles/form.html",
-        {"form": form, "is_create": True, "role_groups": _role_form_groups(form)},
-    )
+    messages.error(request, "Không thể tạo vai trò mới. Hệ thống chỉ cho phép xem và không thể thêm vai trò.")
+    return redirect("portal_roles")
 
 
 @perm_required("change", "roles")
 def role_update(request, pk):
     role = get_object_or_404(Role, pk=pk)
+    # Vai trò hệ thống chỉ được xem, không sửa
+    if role.is_system:
+        form = RoleForm(instance=role)
+        return render(
+            request,
+            "manage/roles/form.html",
+            {
+                "form": form,
+                "is_create": False,
+                "role": role,
+                "role_groups": _role_form_groups(form),
+                "readonly": True,
+            },
+        )
     form = RoleForm(request.POST or None, instance=role)
     if request.method == "POST" and form.is_valid():
         form.save()
@@ -281,7 +287,7 @@ def role_update(request, pk):
     return render(
         request,
         "manage/roles/form.html",
-        {"form": form, "is_create": False, "role": role, "role_groups": _role_form_groups(form)},
+        {"form": form, "is_create": False, "role": role, "role_groups": _role_form_groups(form), "readonly": False},
     )
 
 
@@ -356,7 +362,7 @@ def entity_create(request, entity):
         value = request.GET.get(parent, "").strip()
         if value:
             initial[parent] = value
-    form = cfg["form"](request.POST or None, initial=initial or None)
+    form = cfg["form"](request.POST or None, request.FILES or None, initial=initial or None)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, f"Đã thêm {cfg['singular']}.")
@@ -375,7 +381,7 @@ def entity_update(request, entity, pk):
         messages.error(request, "Bạn không đủ quyền sửa dữ liệu.")
         return redirect("portal_entity_list", entity=entity)
     obj = get_object_or_404(cfg["model"], pk=pk)
-    form = cfg["form"](request.POST or None, instance=obj)
+    form = cfg["form"](request.POST or None, request.FILES or None, instance=obj)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, f"Đã cập nhật {cfg['singular']}.")
@@ -420,3 +426,18 @@ def dashboard_view(request):
         "role": role.name if role else "Khách",
     }
     return render(request, "map_app/dashboard.html", context)
+
+
+def register_view(request):
+    """Trang đăng ký tài khoản công khai. Role mặc định là 'Khách'."""
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+    form = RegisterForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(
+            request,
+            "Đăng ký thành công! Bạn có thể đăng nhập ngay bây giờ.",
+        )
+        return redirect("login")
+    return render(request, "registration/register.html", {"form": form})

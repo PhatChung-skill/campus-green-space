@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-<form method="post" class="form-card split-form">
+<form method="post" class="form-card split-form" enctype="multipart/form-data">
     {% csrf_token %}
     {{ form.non_field_errors }}
     <div class="form-pane">
@@ -24,6 +24,7 @@
                 {% endif %}
             {% endfor %}
         </div>
+
         {% if cfg.media_fields %}
         <details class="media-box" open>
             <summary>Hình ảnh / liên kết minh họa</summary>
@@ -32,6 +33,18 @@
                     {% if field.name in cfg.media_fields %}
                     <div class="field">
                         <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {# Hiển thị preview ảnh hiện tại nếu có (khi sửa) #}
+                        {% if not is_create %}
+                            {% with current_img=field.value %}
+                                {% if current_img %}
+                                <div class="img-preview" style="margin-bottom:8px">
+                                    <img src="/media/{{ current_img }}" alt="Ảnh hiện tại"
+                                         style="max-width:180px;max-height:120px;border-radius:8px;border:1px solid var(--border,#e2e8f0);object-fit:cover;">
+                                    <p style="font-size:11px;color:#64748b;margin:4px 0 0">Ảnh hiện tại</p>
+                                </div>
+                                {% endif %}
+                            {% endwith %}
+                        {% endif %}
                         {{ field }}
                         {{ field.errors }}
                     </div>
@@ -40,6 +53,7 @@
             </div>
         </details>
         {% endif %}
+
         <div class="actions form-actions">
             <a class="btn btn-line" href="{% url 'portal_entity_list' entity %}">Hủy</a>
             <button class="btn btn-primary" type="submit">Lưu</button>

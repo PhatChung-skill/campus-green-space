@@ -1,27 +1,38 @@
 {% extends "manage/base.html" %}
 {% load static %}
-{% block title %}{% if is_create %}Thêm vai trò{% else %}Sửa vai trò{% endif %}{% endblock %}
-{% block heading %}{% if is_create %}Thêm vai trò{% else %}Sửa vai trò{% endif %}{% endblock %}
+{% block title %}{% if readonly %}Xem vai trò{% elif is_create %}Thêm vai trò{% else %}Sửa vai trò{% endif %}{% endblock %}
+{% block heading %}{% if readonly %}Chi tiết vai trò: {{ role.name }}{% elif is_create %}Thêm vai trò{% else %}Sửa vai trò{% endif %}{% endblock %}
 
-{% block subtitle %}{% if is_create %}Tạo nhóm quyền mới cho cổng quản lý{% else %}Điều chỉnh quyền xem / thêm / sửa / xóa{% endif %}{% endblock %}
+{% block subtitle %}{% if readonly %}Vai trò hệ thống — chỉ xem, không thể chỉnh sửa{% elif is_create %}Tạo nhóm quyền mới cho cổng quản lý{% else %}Điều chỉnh quyền xem / thêm / sửa / xóa{% endif %}{% endblock %}
 
 {% block content %}
+{% if readonly %}
+<div class="flash flash-info" style="margin-bottom:18px">
+    🔒 Đây là <strong>vai trò hệ thống</strong>. Bạn chỉ có thể xem thông tin, không thể sửa hay xóa vai trò này.
+</div>
+{% endif %}
+
 <form method="post" class="form-card">
     {% csrf_token %}
     {{ form.non_field_errors }}
-    {% if role and role.is_system %}
-    <div class="flash flash-info" style="margin:16px 24px 0">Đây là vai trò hệ thống: không đổi tên và không xóa được.</div>
-    {% endif %}
     <div class="form-grid">
         <div class="field">
             <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
-            {{ form.name }}
-            {{ form.name.errors }}
+            {% if readonly %}
+                <input class="form-control" type="text" value="{{ role.name }}" disabled>
+            {% else %}
+                {{ form.name }}
+                {{ form.name.errors }}
+            {% endif %}
         </div>
         <div class="field">
             <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
-            {{ form.description }}
-            {{ form.description.errors }}
+            {% if readonly %}
+                <textarea class="form-control" rows="3" disabled>{{ role.description }}</textarea>
+            {% else %}
+                {{ form.description }}
+                {{ form.description.errors }}
+            {% endif %}
         </div>
     </div>
     <div class="perm-grid">
@@ -29,27 +40,37 @@
         <section class="perm-box" data-perm-group>
             <div class="perm-head">
                 <h3>{{ group_name }}</h3>
+                {% if not readonly %}
                 <button class="btn btn-line btn-tiny" type="button" data-toggle-group>Chọn hết</button>
+                {% endif %}
             </div>
             {% for field in fields %}
-            <label class="check-row">
-                {{ field }}
+            <label class="check-row {% if readonly %}check-row-readonly{% endif %}">
+                {% if readonly %}
+                    <input type="checkbox" class="form-check-input" {% if field.value %}checked{% endif %} disabled>
+                {% else %}
+                    {{ field }}
+                {% endif %}
                 <span>{{ field.label }}</span>
             </label>
-            {{ field.errors }}
+            {% if not readonly %}{{ field.errors }}{% endif %}
             {% endfor %}
         </section>
         {% endfor %}
     </div>
     <div class="form-grid">
         <div class="actions">
-            <a class="btn btn-line" href="{% url 'portal_roles' %}">Hủy</a>
+            <a class="btn btn-line" href="{% url 'portal_roles' %}">{% if readonly %}Quay lại{% else %}Hủy{% endif %}</a>
+            {% if not readonly %}
             <button class="btn btn-primary" type="submit">Lưu quyền</button>
+            {% endif %}
         </div>
     </div>
 </form>
 {% endblock %}
 
 {% block extra_js %}
+{% if not readonly %}
 <script src="{% static 'map_app/js/role-form.js' %}"></script>
+{% endif %}
 {% endblock %}

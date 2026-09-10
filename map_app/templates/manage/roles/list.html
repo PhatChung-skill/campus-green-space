@@ -9,9 +9,7 @@
         <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Tìm vai trò...">
         <button class="btn btn-ghost" type="submit">Tìm</button>
     </form>
-    {% if can_add %}
-    <a class="btn btn-primary" href="{% url 'portal_role_create' %}">Thêm vai trò</a>
-    {% endif %}
+    {# Không cho phép tạo vai trò mới — hệ thống quản lý vai trò cố định #}
 </div>
 <div class="table-card table-wrap">
     {% if page_obj.object_list %}
@@ -32,12 +30,22 @@
                 <td>{{ role.name }}</td>
                 <td>{{ role.description|default:"—" }}</td>
                 <td>{% if role.can_access_portal %}Có{% else %}Không{% endif %}</td>
-                <td>{% if role.is_system %}Có{% else %}Không{% endif %}</td>
+                <td>
+                    {% if role.is_system %}
+                    <span style="color:var(--green-600,#16a34a);font-weight:600">🔒 Hệ thống</span>
+                    {% else %}
+                    Không
+                    {% endif %}
+                </td>
                 <td>{{ role.user_count }}</td>
                 <td>
                     <div class="actions">
                         {% if can_change %}
-                        <a class="btn btn-ghost" href="{% url 'portal_role_edit' role.pk %}">Sửa</a>
+                            {% if role.is_system %}
+                            <a class="btn btn-ghost" href="{% url 'portal_role_edit' role.pk %}">Xem</a>
+                            {% else %}
+                            <a class="btn btn-ghost" href="{% url 'portal_role_edit' role.pk %}">Sửa</a>
+                            {% endif %}
                         {% endif %}
                         {% if can_delete and not role.is_system %}
                         <a class="btn btn-danger" href="{% url 'portal_role_delete' role.pk %}">Xóa</a>

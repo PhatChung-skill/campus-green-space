@@ -21,10 +21,11 @@ SELECT_CLASS = {"class": "form-select"}
 CHECK_CLASS = {"class": "form-check-input"}
 TEXTAREA_CLASS = {"class": "form-control", "rows": 3}
 IMAGE_LABELS = {
-    "image_1": "Hình 1 (URL)",
-    "image_2": "Hình 2 (URL)",
-    "image_3": "Hình 3 (URL)",
+    "image_1": "Hình 1",
+    "image_2": "Hình 2",
+    "image_3": "Hình 3",
 }
+IMAGE_WIDGET = {"class": "form-control-file"}
 
 
 class PortalLoginForm(AuthenticationForm):
@@ -83,9 +84,9 @@ class CampusForm(GeomModelForm):
         labels = IMAGE_LABELS
         widgets = {
             "name": forms.TextInput(attrs=INPUT_CLASS),
-            "image_1": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
-            "image_2": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
-            "image_3": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
+            "image_1": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
+            "image_2": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
+            "image_3": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
         }
 
 
@@ -99,9 +100,9 @@ class BuildingForm(GeomModelForm):
         widgets = {
             "campus": forms.Select(attrs=SELECT_CLASS),
             "name": forms.TextInput(attrs=INPUT_CLASS),
-            "image_1": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
-            "image_2": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
-            "image_3": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
+            "image_1": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
+            "image_2": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
+            "image_3": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
         }
 
 
@@ -130,9 +131,9 @@ class RoomForm(GeomModelForm):
             "floor": forms.Select(attrs=SELECT_CLASS),
             "name": forms.TextInput(attrs=INPUT_CLASS),
             "room_type": forms.Select(attrs=SELECT_CLASS),
-            "image_1": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
-            "image_2": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
-            "image_3": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
+            "image_1": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
+            "image_2": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
+            "image_3": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
         }
 
 
@@ -147,9 +148,9 @@ class ParkingAreaForm(GeomModelForm):
             "campus": forms.Select(attrs=SELECT_CLASS),
             "name": forms.TextInput(attrs=INPUT_CLASS),
             "capacity": forms.NumberInput(attrs=INPUT_CLASS),
-            "image_1": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
-            "image_2": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
-            "image_3": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
+            "image_1": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
+            "image_2": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
+            "image_3": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
         }
 
 
@@ -164,9 +165,9 @@ class GreenAreaForm(GeomModelForm):
             "campus": forms.Select(attrs=SELECT_CLASS),
             "name": forms.TextInput(attrs=INPUT_CLASS),
             "type": forms.Select(attrs=SELECT_CLASS),
-            "image_1": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
-            "image_2": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
-            "image_3": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
+            "image_1": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
+            "image_2": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
+            "image_3": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
         }
 
 
@@ -181,9 +182,9 @@ class TreeForm(GeomModelForm):
             "campus": forms.Select(attrs=SELECT_CLASS),
             "species": forms.TextInput(attrs=INPUT_CLASS),
             "health_status": forms.Select(attrs=SELECT_CLASS),
-            "image_1": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
-            "image_2": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
-            "image_3": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
+            "image_1": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
+            "image_2": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
+            "image_3": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
         }
 
 
@@ -388,4 +389,57 @@ class UserUpdateForm(forms.ModelForm):
             profile.phone = self.cleaned_data.get("phone", "")
             profile.notes = self.cleaned_data.get("notes", "")
             profile.save()
+        return user
+
+
+class RegisterForm(forms.ModelForm):
+    """Form đăng ký tài khoản công khai — role tự động gán là 'Khách'."""
+
+    password1 = forms.CharField(
+        label="Mật khẩu",
+        widget=forms.PasswordInput(attrs={**INPUT_CLASS, "placeholder": "Ít nhất 8 ký tự"}),
+    )
+    password2 = forms.CharField(
+        label="Nhập lại mật khẩu",
+        widget=forms.PasswordInput(attrs={**INPUT_CLASS, "placeholder": "Nhập lại mật khẩu"}),
+    )
+
+    class Meta:
+        model = User
+        fields = ["username", "first_name", "last_name", "email"]
+        labels = {
+            "username": "Tên đăng nhập",
+            "first_name": "Họ",
+            "last_name": "Tên",
+            "email": "Email",
+        }
+        widgets = {
+            "username": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "Tên đăng nhập"}),
+            "first_name": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "Họ"}),
+            "last_name": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "Tên"}),
+            "email": forms.EmailInput(attrs={**INPUT_CLASS, "placeholder": "email@example.com"}),
+        }
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email", "").strip()
+        if email and User.objects.filter(email__iexact=email).exists():
+            raise ValidationError("Email này đã được dùng bởi tài khoản khác.")
+        return email
+
+    def clean(self):
+        cleaned = super().clean()
+        p1 = cleaned.get("password1")
+        p2 = cleaned.get("password2")
+        if p1 and p2 and p1 != p2:
+            self.add_error("password2", "Mật khẩu nhập lại không khớp.")
+        if p1 and len(p1) < 8:
+            self.add_error("password1", "Mật khẩu phải có ít nhất 8 ký tự.")
+        return cleaned
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data["password1"])
+        if commit:
+            user.save()
+            # Signal ensure_user_profile sẽ tự tạo profile với role "Khách"
         return user

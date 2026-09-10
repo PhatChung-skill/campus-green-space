@@ -4,112 +4,886 @@
     <title>Cổng Không gian xanh - HCMUNRE</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Cổng thông tin tra cứu không gian xanh HCMUNRE">
     {% load static %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="{% static 'map_app/css/portal.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; padding: 0; }
-        #map { width: 100vw; height: 100vh; }
-        .map-overlay .btn { box-shadow: 0 8px 24px rgba(11,61,46,.25); }
-        .leaflet-control-layers { border-radius: 12px !important; }
+/* ══════════════════════════════════════════
+   RESET & BASE
+══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+    height: 100%; overflow: hidden;
+    font-family: "Be Vietnam Pro", "Segoe UI", sans-serif;
+    font-size: 14px; color: #0b3d2e;
+}
+
+/* ══════════════════════════════════════════
+   APP SHELL
+══════════════════════════════════════════ */
+#app {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+}
+
+/* ══════════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════════ */
+#sidebar {
+    width: 320px;
+    min-width: 320px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #f7fbf8;
+    border-right: 1px solid #cde5d6;
+    z-index: 10;
+    overflow: hidden;
+    transition: transform .3s ease;
+}
+
+/* Header */
+.sb-header {
+    background: linear-gradient(160deg, #0b3d2e 0%, #14532d 100%);
+    color: #edf8f1;
+    padding: 18px 18px 14px;
+    flex-shrink: 0;
+}
+.sb-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.sb-brand-icon {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,.12);
+    border-radius: 12px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+}
+.sb-brand h1 {
+    font-size: 13px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase;
+    line-height: 1.4;
+}
+.sb-brand p {
+    font-size: 11px; color: #9ecbb2; margin-top: 2px;
+}
+
+/* Campus selector */
+.sb-campus-wrap { position: relative; }
+.sb-campus-label {
+    display: block; font-size: 11px; font-weight: 600;
+    color: #9ecbb2; text-transform: uppercase; letter-spacing: .08em;
+    margin-bottom: 6px;
+}
+#campus-select {
+    width: 100%;
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 12px;
+    color: #edf8f1;
+    padding: 10px 38px 10px 12px;
+    font: inherit; font-size: 13px;
+    appearance: none; cursor: pointer;
+    transition: background .15s;
+}
+#campus-select:focus { outline: 2px solid #86efac; }
+#campus-select option { background: #0b3d2e; color: #edf8f1; }
+.sb-campus-wrap::after {
+    content: '▾';
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    color: #9ecbb2; pointer-events: none; font-size: 12px;
+    margin-top: 10px;
+}
+
+/* Layers panel */
+.sb-section {
+    padding: 14px 16px;
+    border-bottom: 1px solid #cde5d6;
+    flex-shrink: 0;
+}
+.sb-section-title {
+    font-size: 11px; font-weight: 700; color: #5c7468;
+    text-transform: uppercase; letter-spacing: .08em;
+    margin-bottom: 10px;
+}
+.layer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+.layer-chip {
+    display: flex; align-items: center; gap: 7px;
+    padding: 7px 10px;
+    border: 1.5px solid #cde5d6;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 12.5px; font-weight: 600;
+    color: #1f7a4d;
+    background: white;
+    user-select: none;
+    transition: all .15s;
+}
+.layer-chip input { display: none; }
+.layer-chip .chip-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.layer-chip.active { background: #eef7f1; border-color: #2f9e63; }
+.layer-chip:hover { border-color: #2f9e63; }
+
+/* ── Detail Panel ── */
+#detail-panel {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    animation: slideIn .22s ease;
+}
+#detail-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #5c7468;
+    padding: 32px 20px;
+    text-align: center;
+}
+#detail-empty .empty-icon {
+    font-size: 48px; opacity: .5;
+}
+#detail-empty p { font-size: 13px; line-height: 1.6; }
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* Carousel */
+#carousel {
+    position: relative;
+    background: #e2e8f0;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+#carousel-track {
+    display: flex;
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
+    height: 200px;
+}
+#carousel-track img {
+    width: 320px; min-width: 320px; height: 200px;
+    object-fit: cover; flex-shrink: 0; display: block;
+}
+.carousel-no-img {
+    width: 320px; height: 140px;
+    background: linear-gradient(135deg, #0b3d2e 0%, #1f7a4d 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 52px; color: #bbf7d0;
+    flex-shrink: 0;
+}
+.carousel-btn {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 32px; height: 32px;
+    background: rgba(0,0,0,.45); color: white; border: 0;
+    border-radius: 50%; font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s; z-index: 2;
+    line-height: 1;
+}
+.carousel-btn:hover { background: rgba(0,0,0,.65); }
+#btn-prev { left: 8px; }
+#btn-next { right: 8px; }
+.carousel-dots {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 5px; z-index: 2;
+}
+.carousel-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: rgba(255,255,255,.5);
+    transition: background .2s, transform .2s;
+}
+.carousel-dot.active {
+    background: white; transform: scale(1.3);
+}
+
+/* Detail body */
+#detail-body { padding: 16px; flex: 1; }
+
+.detail-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 999px;
+    margin-bottom: 8px;
+}
+.badge-campus  { background:#d8f3e3; color:#14532d; }
+.badge-building{ background:#fef9c3; color:#854d0e; }
+.badge-green   { background:#dcfce7; color:#15803d; }
+.badge-parking { background:#dbeafe; color:#1e40af; }
+.badge-tree    { background:#f0fdf4; color:#166534; }
+.badge-room    { background:#fce7f3; color:#9d174d; }
+.badge-floor   { background:#fff7ed; color:#c2410c; }
+
+#detail-title {
+    font-size: 18px; font-weight: 700; color: #0b3d2e;
+    line-height: 1.3; margin-bottom: 14px;
+}
+
+.detail-meta {
+    list-style: none;
+    display: flex; flex-direction: column; gap: 9px;
+    margin-bottom: 16px;
+}
+.detail-meta li {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding-bottom: 9px;
+    border-bottom: 1px solid #e8f4ed;
+    font-size: 13px;
+}
+.detail-meta li:last-child { border-bottom: 0; padding-bottom: 0; }
+.meta-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+.meta-label { color: #5c7468; font-size: 11px; margin-bottom: 2px; }
+.meta-value { color: #0b3d2e; font-weight: 600; }
+
+.detail-close-btn {
+    width: 100%;
+    padding: 10px;
+    background: #eef7f1;
+    border: 1.5px solid #cde5d6;
+    border-radius: 12px;
+    color: #14532d;
+    font: inherit; font-weight: 650; font-size: 13px;
+    cursor: pointer;
+    transition: background .15s;
+    margin-top: 4px;
+}
+.detail-close-btn:hover { background: #d8f3e3; }
+
+/* Auth buttons in sidebar footer */
+.sb-footer {
+    padding: 12px 16px;
+    border-top: 1px solid #cde5d6;
+    display: flex; gap: 8px;
+    flex-shrink: 0;
+    background: white;
+}
+.sb-btn {
+    flex: 1;
+    padding: 9px 8px;
+    border-radius: 12px;
+    font: inherit; font-size: 13px; font-weight: 650;
+    cursor: pointer; border: 0;
+    text-decoration: none;
+    text-align: center;
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    transition: background .15s;
+}
+.sb-btn-primary { background: #1f7a4d; color: white; }
+.sb-btn-primary:hover { background: #14532d; }
+.sb-btn-outline {
+    background: white; color: #1f7a4d;
+    border: 1.5px solid #cde5d6;
+}
+.sb-btn-outline:hover { background: #eef7f1; }
+
+/* ══════════════════════════════════════════
+   MAP AREA
+══════════════════════════════════════════ */
+#map-wrap { flex: 1; position: relative; overflow: hidden; }
+#map { width: 100%; height: 100%; }
+
+/* Sidebar toggle on mobile */
+#sidebar-toggle {
+    display: none;
+    position: absolute;
+    top: 12px; left: 12px;
+    z-index: 800;
+    background: rgba(11,61,46,.9);
+    color: #d8f3e3;
+    border: 0; border-radius: 12px;
+    padding: 10px 14px;
+    font: inherit; font-size: 13px; font-weight: 650;
+    cursor: pointer;
+}
+
+/* Leaflet layer control position */
+.leaflet-top.leaflet-right { top: 12px !important; right: 12px !important; }
+.leaflet-control-layers {
+    border-radius: 14px !important;
+    box-shadow: 0 4px 20px rgba(11,61,46,.15) !important;
+    font-family: inherit !important;
+    font-size: 13px !important;
+}
+
+/* ══════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════ */
+@media (max-width: 768px) {
+    #sidebar {
+        position: absolute; left: 0; top: 0; height: 100%;
+        transform: translateX(-100%); z-index: 900;
+    }
+    #sidebar.open { transform: none; box-shadow: 4px 0 24px rgba(0,0,0,.2); }
+    #sidebar-toggle { display: flex; }
+    #map-wrap { width: 100%; }
+}
     </style>
 </head>
 <body>
-    <div class="map-overlay">
-        <div class="user-chip" style="background:#14532d;color:#fff;border:0">Cổng không gian xanh · HCMUNRE</div>
-        <div class="top-actions">
+<div id="app">
+
+    <!-- ════════════ SIDEBAR ════════════ -->
+    <aside id="sidebar">
+
+        <!-- Header + Brand -->
+        <div class="sb-header">
+            <div class="sb-brand">
+                <div class="sb-brand-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 3c2.8 3.2 8 6.2 8 11.2A8 8 0 1 1 4 14.2C4 9.2 9.2 6.2 12 3Z" fill="#bbf7d0"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1>Cổng không gian xanh</h1>
+                    <p>HCMUNRE · Tra cứu bản đồ</p>
+                </div>
+            </div>
+
+            <!-- Campus Selector -->
+            <div class="sb-campus-wrap">
+                <span class="sb-campus-label">📍 Chọn cơ sở</span>
+                <select id="campus-select">
+                    <option value="">— Tất cả cơ sở —</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Layer Toggles -->
+        <div class="sb-section">
+            <div class="sb-section-title">Lớp hiển thị</div>
+            <div class="layer-grid" id="layer-grid">
+                <!-- generated by JS -->
+            </div>
+        </div>
+
+        <!-- Detail / Empty state -->
+        <div id="detail-panel">
+            <div id="detail-empty">
+                <span class="empty-icon">🗺️</span>
+                <p>Chọn một đối tượng trên bản đồ để xem thông tin chi tiết.</p>
+            </div>
+
+            <!-- Carousel (hidden by default) -->
+            <div id="carousel" style="display:none">
+                <div id="carousel-track"></div>
+                <button class="carousel-btn" id="btn-prev">‹</button>
+                <button class="carousel-btn" id="btn-next">›</button>
+                <div class="carousel-dots" id="carousel-dots"></div>
+            </div>
+
+            <!-- Info body (hidden by default) -->
+            <div id="detail-body" style="display:none">
+                <span id="detail-badge" class="detail-badge"></span>
+                <div id="detail-title"></div>
+                <ul class="detail-meta" id="detail-meta"></ul>
+                <button class="detail-close-btn" id="detail-close">✕ Đóng thông tin</button>
+            </div>
+        </div>
+
+        <!-- Footer auth -->
+        <div class="sb-footer">
             {% if user.is_authenticated %}
                 {% if can_access_portal %}
-                <a class="btn btn-primary" href="{% url 'portal_home' %}">Trang quản lý</a>
+                <a class="sb-btn sb-btn-primary" href="{% url 'portal_home' %}">⚙️ Quản lý</a>
                 {% else %}
-                <a class="btn btn-primary" href="{% url 'dashboard' %}">Tài khoản</a>
+                <a class="sb-btn sb-btn-outline" href="{% url 'dashboard' %}">👤 Tài khoản</a>
                 {% endif %}
+                <form action="{% url 'logout' %}" method="post" style="flex:1">
+                    {% csrf_token %}
+                    <button class="sb-btn sb-btn-outline" type="submit" style="width:100%">Đăng xuất</button>
+                </form>
             {% else %}
-                <a class="btn btn-primary" href="{% url 'login' %}">Đăng nhập</a>
+                <a class="sb-btn sb-btn-primary" href="{% url 'login' %}">🔑 Đăng nhập</a>
+                <a class="sb-btn sb-btn-outline" href="{% url 'register' %}">📝 Đăng ký</a>
             {% endif %}
         </div>
+    </aside>
+
+    <!-- ════════════ MAP ════════════ -->
+    <div id="map-wrap">
+        <button id="sidebar-toggle" onclick="toggleSidebar()">☰ Menu</button>
+        <div id="map"></div>
     </div>
-    <div id="map"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        var map = L.map('map').setView([10.7936, 106.6661], 18);
+</div><!-- #app -->
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 22,
-            attribution: '© Dữ liệu bản đồ HCMUNRE'
-        }).addTo(map);
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+'use strict';
 
-        function layerFrom(jsonText, options) {
-            return L.geoJSON(JSON.parse(jsonText), options);
+/* ═══════════════════════════════════════
+   SIDEBAR TOGGLE (mobile)
+═══════════════════════════════════════ */
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+}
+
+/* ═══════════════════════════════════════
+   MAP INIT
+═══════════════════════════════════════ */
+var map = L.map('map', { zoomControl: false }).setView([10.7936, 106.6661], 17);
+L.control.zoom({ position: 'topright' }).addTo(map);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 22,
+    maxNativeZoom: 19,
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> · HCMUNRE'
+}).addTo(map);
+
+/* ═══════════════════════════════════════
+   RAW DATA
+═══════════════════════════════════════ */
+var campusData   = JSON.parse('{{ campuses_geojson|escapejs }}');
+var buildingData = JSON.parse('{{ buildings_geojson|escapejs }}');
+var greenData    = JSON.parse('{{ greens_geojson|escapejs }}');
+var parkingData  = JSON.parse('{{ parkings_geojson|escapejs }}');
+var floorData    = JSON.parse('{{ floors_geojson|escapejs }}');
+var roomData     = JSON.parse('{{ rooms_geojson|escapejs }}');
+var treeData     = JSON.parse('{{ trees_geojson|escapejs }}');
+
+/* ═══════════════════════════════════════
+   CAMPUS SELECTOR
+═══════════════════════════════════════ */
+var campusBoundsMap = {};   // { pk: L.LatLngBounds }
+var campusLayerRef  = null; // will be set after geoJSON creation
+
+var campusSelect = document.getElementById('campus-select');
+
+// Build options from GeoJSON after layer is created
+function buildCampusSelector(layer) {
+    campusLayerRef = layer;
+    layer.eachLayer(function(lyr) {
+        var f = lyr.feature;
+        var pk = f.id || f.properties.pk;
+        var name = f.properties.name;
+        var bounds;
+        try { bounds = lyr.getBounds(); } catch(e) { return; }
+        if (pk && name) {
+            campusBoundsMap[pk] = bounds;
+            var opt = document.createElement('option');
+            opt.value = pk;
+            opt.textContent = '🏫 ' + name;
+            campusSelect.appendChild(opt);
         }
+    });
+}
 
-        var campuses = layerFrom('{{ campuses_geojson|escapejs }}', {
-            style: {color: "#1f7a4d", weight: 3, fillOpacity: 0.08},
-            onEachFeature: function (feature, layer) {
-                layer.bindPopup("<b>Khuôn viên:</b> " + feature.properties.name);
-            }
-        });
-        var buildings = layerFrom('{{ buildings_geojson|escapejs }}', {
-            style: {color: "#0b3d2e", weight: 2, fillColor: "#2f9e63", fillOpacity: 0.5},
-            onEachFeature: function (feature, layer) {
-                layer.bindPopup("<b>Tòa nhà:</b> " + feature.properties.name);
-            }
-        });
-        var greens = layerFrom('{{ greens_geojson|escapejs }}', {
-            style: {color: "#15803d", weight: 1, fillColor: "#4ade80", fillOpacity: 0.45},
-            onEachFeature: function (feature, layer) {
-                layer.bindPopup("<b>Mảng xanh:</b> " + feature.properties.name);
-            }
-        });
-        var parkings = layerFrom('{{ parkings_geojson|escapejs }}', {
-            style: {color: "#1e3a8a", weight: 1, fillColor: "#93c5fd", fillOpacity: 0.45},
-            onEachFeature: function (feature, layer) {
-                layer.bindPopup("<b>Bãi xe:</b> " + feature.properties.name);
-            }
-        });
-        var floors = layerFrom('{{ floors_geojson|escapejs }}', {
-            style: {color: "#854d0e", weight: 1, fillOpacity: 0.08},
-            onEachFeature: function (feature, layer) {
-                layer.bindPopup("<b>Tầng:</b> " + feature.properties.name);
-            }
-        });
-        var rooms = layerFrom('{{ rooms_geojson|escapejs }}', {
-            pointToLayer: function (feature, latlng) {
-                return L.circleMarker(latlng, {radius: 6, color: "#9a3412", fillColor: "#fdba74", fillOpacity: 0.9});
-            },
-            onEachFeature: function (feature, layer) {
-                layer.bindPopup("<b>Phòng:</b> " + feature.properties.name);
-            }
-        });
-        var trees = layerFrom('{{ trees_geojson|escapejs }}', {
-            pointToLayer: function (feature, latlng) {
-                return L.circleMarker(latlng, {radius: 7, color: "#14532d", fillColor: "#22c55e", fillOpacity: 0.95});
-            },
-            onEachFeature: function (feature, layer) {
-                layer.bindPopup("<b>Cây:</b> " + feature.properties.species);
-            }
-        });
-
-        campuses.addTo(map);
-        buildings.addTo(map);
-        greens.addTo(map);
-        parkings.addTo(map);
-        trees.addTo(map);
-
-        L.control.layers(null, {
-            "Khuôn viên": campuses,
-            "Tòa nhà": buildings,
-            "Mảng xanh": greens,
-            "Bãi xe": parkings,
-            "Tầng": floors,
-            "Phòng": rooms,
-            "Cây xanh": trees
-        }, {collapsed: false}).addTo(map);
-
-        if (campuses.getBounds().isValid()) {
-            map.fitBounds(campuses.getBounds(), {padding: [24, 24], maxZoom: 18});
+campusSelect.addEventListener('change', function() {
+    var pk = this.value;
+    if (!pk) {
+        // Fit all campuses
+        if (campusLayerRef && campusLayerRef.getBounds().isValid()) {
+            map.flyToBounds(campusLayerRef.getBounds(), { padding: [40, 40], maxZoom: 18, duration: 1.2 });
         }
-    </script>
+    } else {
+        var bounds = campusBoundsMap[pk];
+        if (bounds && bounds.isValid()) {
+            map.flyToBounds(bounds, { padding: [60, 60], maxZoom: 19, duration: 1.2 });
+        }
+    }
+    closeDetail();
+});
+
+/* ═══════════════════════════════════════
+   CAROUSEL
+═══════════════════════════════════════ */
+var carouselImgs = [];
+var carouselIdx  = 0;
+
+function mediaUrl(path) {
+    return (path && path !== '' && path !== 'null' && path !== 'None') ? '/media/' + path : null;
+}
+
+function buildCarousel(rawImgs, fallbackIcon) {
+    var imgs = (rawImgs || []).map(mediaUrl).filter(Boolean);
+    carouselImgs = imgs;
+    carouselIdx  = 0;
+
+    var carousel = document.getElementById('carousel');
+    var track    = document.getElementById('carousel-track');
+    var dots     = document.getElementById('carousel-dots');
+    var btnPrev  = document.getElementById('btn-prev');
+    var btnNext  = document.getElementById('btn-next');
+
+    track.innerHTML = '';
+    dots.innerHTML  = '';
+
+    if (imgs.length === 0) {
+        // No image — show icon banner
+        track.innerHTML = '<div class="carousel-no-img" style="width:100%;height:140px">' + (fallbackIcon || '🗺️') + '</div>';
+        track.style.height = '140px';
+        carousel.style.display = 'block';
+        btnPrev.style.display = btnNext.style.display = 'none';
+        return;
+    }
+
+    track.style.height = '200px';
+    imgs.forEach(function(src, i) {
+        var img = document.createElement('img');
+        img.src = src; img.alt = 'Hình ' + (i + 1);
+        track.appendChild(img);
+
+        var dot = document.createElement('div');
+        dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+        dot.addEventListener('click', function() { goSlide(i); });
+        dots.appendChild(dot);
+    });
+
+    if (imgs.length > 1) {
+        btnPrev.style.display = btnNext.style.display = 'flex';
+    } else {
+        btnPrev.style.display = btnNext.style.display = 'none';
+    }
+
+    carousel.style.display = 'block';
+    renderCarousel();
+}
+
+function renderCarousel() {
+    var track = document.getElementById('carousel-track');
+    var dotEls = document.getElementById('carousel-dots').querySelectorAll('.carousel-dot');
+    track.style.transform = 'translateX(' + (-carouselIdx * 320) + 'px)';
+    dotEls.forEach(function(d, i) {
+        d.classList.toggle('active', i === carouselIdx);
+    });
+}
+
+function goSlide(idx) {
+    carouselIdx = (idx + carouselImgs.length) % carouselImgs.length;
+    renderCarousel();
+}
+
+document.getElementById('btn-prev').addEventListener('click', function() { goSlide(carouselIdx - 1); });
+document.getElementById('btn-next').addEventListener('click', function() { goSlide(carouselIdx + 1); });
+
+// Touch / swipe support
+(function() {
+    var track = document.getElementById('carousel');
+    var startX = 0;
+    track.addEventListener('touchstart', function(e) { startX = e.touches[0].clientX; }, {passive:true});
+    track.addEventListener('touchend', function(e) {
+        var dx = e.changedTouches[0].clientX - startX;
+        if (Math.abs(dx) > 40) goSlide(carouselIdx + (dx < 0 ? 1 : -1));
+    }, {passive:true});
+})();
+
+/* ═══════════════════════════════════════
+   DETAIL PANEL
+═══════════════════════════════════════ */
+function showDetail(opts) {
+    // opts = { type, badgeClass, icon, title, images, meta: [[icon, label, value], ...] }
+    document.getElementById('detail-empty').style.display = 'none';
+
+    // Carousel
+    buildCarousel(opts.images, opts.icon);
+
+    // Badge + title
+    var badge = document.getElementById('detail-badge');
+    badge.className = 'detail-badge ' + opts.badgeClass;
+    badge.textContent = opts.type;
+
+    document.getElementById('detail-title').textContent = opts.title || '—';
+
+    // Meta list
+    var ul = document.getElementById('detail-meta');
+    ul.innerHTML = '';
+    (opts.meta || []).forEach(function(m) {
+        // m = [icon, label, value]
+        if (!m[2] && m[2] !== 0) return;
+        var li = document.createElement('li');
+        li.innerHTML =
+            '<span class="meta-icon">' + m[0] + '</span>' +
+            '<div><div class="meta-label">' + m[1] + '</div>' +
+            '<div class="meta-value">' + m[2] + '</div></div>';
+        ul.appendChild(li);
+    });
+
+    document.getElementById('detail-body').style.display = 'block';
+
+    // On mobile, open sidebar
+    document.getElementById('sidebar').classList.add('open');
+}
+
+function closeDetail() {
+    document.getElementById('detail-empty').style.display = 'flex';
+    document.getElementById('carousel').style.display = 'none';
+    document.getElementById('detail-body').style.display = 'none';
+}
+
+document.getElementById('detail-close').addEventListener('click', closeDetail);
+
+/* ═══════════════════════════════════════
+   LAYER CHIPS
+═══════════════════════════════════════ */
+var layerDefs = [
+    { key: 'campus',   label: 'Khuôn viên', color: '#16a34a', icon: '🏫' },
+    { key: 'building', label: 'Tòa nhà',    color: '#fbbf24', icon: '🏢' },
+    { key: 'green',    label: 'Mảng xanh',  color: '#4ade80', icon: '🌿' },
+    { key: 'parking',  label: 'Bãi xe',     color: '#93c5fd', icon: '🅿️' },
+    { key: 'floor',    label: 'Tầng',       color: '#fb923c', icon: '📐' },
+    { key: 'room',     label: 'Phòng',      color: '#f9a8d4', icon: '🚪' },
+    { key: 'tree',     label: 'Cây xanh',   color: '#22c55e', icon: '🌳' },
+];
+
+var layerMap  = {};   // { key: L.GeoJSON }
+var layerGrid = document.getElementById('layer-grid');
+
+layerDefs.forEach(function(def) {
+    var chip = document.createElement('label');
+    chip.className = 'layer-chip active';
+    chip.dataset.key = def.key;
+    chip.innerHTML =
+        '<input type="checkbox" checked>' +
+        '<span class="chip-dot" style="background:' + def.color + '"></span>' +
+        def.icon + ' ' + def.label;
+
+    chip.addEventListener('click', function(e) {
+        e.preventDefault();
+        var cb = chip.querySelector('input');
+        cb.checked = !cb.checked;
+        chip.classList.toggle('active', cb.checked);
+        var lyr = layerMap[def.key];
+        if (!lyr) return;
+        if (cb.checked) { map.addLayer(lyr); }
+        else            { map.removeLayer(lyr); }
+    });
+
+    layerGrid.appendChild(chip);
+});
+
+function registerLayer(key, lyr) { layerMap[key] = lyr; }
+
+/* ═══════════════════════════════════════
+   CLICK HANDLER FACTORY
+═══════════════════════════════════════ */
+function onFeatureClick(opts) {
+    return function(e) {
+        L.DomEvent.stopPropagation(e);
+        // Pan map slightly left so sidebar doesn't cover feature
+        showDetail(opts);
+        var lyr = e.target;
+        try {
+            var center = lyr.getCenter ? lyr.getCenter() : lyr.getLatLng();
+            map.panTo(center, { animate: true });
+        } catch(err) {}
+    };
+}
+
+/* ═══════════════════════════════════════
+   ROOM TYPE & HEALTH LABELS
+═══════════════════════════════════════ */
+var ROOM_TYPES = {
+    classroom: '📚 Phòng học',
+    lab:       '🔬 Thực hành / Lab',
+    wc:        '🚻 Nhà vệ sinh',
+    office:    '💼 Văn phòng'
+};
+var HEALTH = {
+    good:       '✅ Phát triển tốt',
+    needs_care: '⚠️ Cần chăm sóc'
+};
+
+/* ═══════════════════════════════════════
+   GEOJSON LAYERS
+═══════════════════════════════════════ */
+
+// ── Khuôn viên
+var campuses = L.geoJSON(campusData, {
+    style: { color: '#0b3d2e', weight: 2.5, fillColor: '#16a34a', fillOpacity: 0.08 },
+    onEachFeature: function(f, lyr) {
+        var p = f.properties;
+        lyr.on('click', onFeatureClick({
+            type: 'Khuôn viên', badgeClass: 'badge-campus', icon: '🏫',
+            title: p.name,
+            images: [p.image_1, p.image_2, p.image_3],
+            meta: []
+        }));
+    }
+}).addTo(map);
+buildCampusSelector(campuses);
+registerLayer('campus', campuses);
+
+// ── Tòa nhà
+var buildings = L.geoJSON(buildingData, {
+    style: { color: '#92400e', weight: 1.5, fillColor: '#fbbf24', fillOpacity: 0.35 },
+    onEachFeature: function(f, lyr) {
+        var p = f.properties;
+        lyr.on('click', onFeatureClick({
+            type: 'Tòa nhà', badgeClass: 'badge-building', icon: '🏢',
+            title: p.name,
+            images: [p.image_1, p.image_2, p.image_3],
+            meta: [
+                ['🏫', 'Thuộc cơ sở', p.campus]
+            ]
+        }));
+    }
+}).addTo(map);
+registerLayer('building', buildings);
+
+// ── Mảng xanh
+var greens = L.geoJSON(greenData, {
+    style: { color: '#15803d', weight: 1.5, fillColor: '#4ade80', fillOpacity: 0.5 },
+    onEachFeature: function(f, lyr) {
+        var p = f.properties;
+        var typeLabel = p.type === 'grass' ? '🌿 Thảm cỏ' : '🌸 Vườn hoa / Cây cảnh';
+        lyr.on('click', onFeatureClick({
+            type: 'Mảng xanh', badgeClass: 'badge-green', icon: '🌿',
+            title: p.name,
+            images: [p.image_1, p.image_2, p.image_3],
+            meta: [
+                ['🌱', 'Loại mảng xanh', typeLabel],
+                ['🏫', 'Thuộc cơ sở', p.campus]
+            ]
+        }));
+    }
+}).addTo(map);
+registerLayer('green', greens);
+
+// ── Bãi xe
+var parkings = L.geoJSON(parkingData, {
+    style: { color: '#1e3a8a', weight: 1.5, fillColor: '#93c5fd', fillOpacity: 0.45 },
+    onEachFeature: function(f, lyr) {
+        var p = f.properties;
+        lyr.on('click', onFeatureClick({
+            type: 'Bãi xe', badgeClass: 'badge-parking', icon: '🅿️',
+            title: p.name,
+            images: [p.image_1, p.image_2, p.image_3],
+            meta: [
+                ['🔢', 'Sức chứa', p.capacity ? p.capacity + ' xe' : 'Chưa cập nhật'],
+                ['🏫', 'Thuộc cơ sở', p.campus]
+            ]
+        }));
+    }
+}).addTo(map);
+registerLayer('parking', parkings);
+
+// ── Tầng
+var floors = L.geoJSON(floorData, {
+    style: { color: '#c2410c', weight: 1, fillOpacity: 0.06, dashArray: '4 3' },
+    onEachFeature: function(f, lyr) {
+        var p = f.properties;
+        var bpLink = p.blueprint_url
+            ? '<a href="' + p.blueprint_url + '" target="_blank" style="color:#1f7a4d">Xem bản vẽ ↗</a>'
+            : 'Chưa có';
+        lyr.on('click', onFeatureClick({
+            type: 'Tầng', badgeClass: 'badge-floor', icon: '📐',
+            title: p.name,
+            images: [],
+            meta: [
+                ['🏢', 'Thuộc tòa nhà', p.building],
+                ['🔢', 'Cấp tầng', p.level !== undefined && p.level !== null ? 'Tầng ' + p.level : null],
+                ['📄', 'Bản vẽ', bpLink]
+            ]
+        }));
+    }
+});
+registerLayer('floor', floors);
+
+// ── Phòng
+var rooms = L.geoJSON(roomData, {
+    pointToLayer: function(f, latlng) {
+        return L.circleMarker(latlng, {
+            radius: 7, color: '#9d174d', fillColor: '#f9a8d4', fillOpacity: 0.92, weight: 1.5
+        });
+    },
+    onEachFeature: function(f, lyr) {
+        var p = f.properties;
+        lyr.on('click', onFeatureClick({
+            type: 'Phòng', badgeClass: 'badge-room', icon: '🚪',
+            title: p.name,
+            images: [p.image_1, p.image_2, p.image_3],
+            meta: [
+                ['🏷️', 'Loại phòng', ROOM_TYPES[p.room_type] || p.room_type],
+                ['📐', 'Thuộc tầng', p.floor]
+            ]
+        }));
+    }
+});
+registerLayer('room', rooms);
+
+// ── Cây xanh
+var trees = L.geoJSON(treeData, {
+    pointToLayer: function(f, latlng) {
+        var ok = f.properties.health_status === 'good';
+        return L.circleMarker(latlng, {
+            radius: 8,
+            color: ok ? '#14532d' : '#b45309',
+            fillColor: ok ? '#22c55e' : '#fbbf24',
+            fillOpacity: 0.95, weight: 1.5
+        });
+    },
+    onEachFeature: function(f, lyr) {
+        var p = f.properties;
+        lyr.on('click', onFeatureClick({
+            type: 'Cây xanh', badgeClass: 'badge-tree', icon: '🌳',
+            title: p.species || 'Cây xanh',
+            images: [p.image_1, p.image_2, p.image_3],
+            meta: [
+                ['💚', 'Tình trạng', HEALTH[p.health_status] || p.health_status],
+                ['🏫', 'Thuộc cơ sở', p.campus]
+            ]
+        }));
+    }
+}).addTo(map);
+registerLayer('tree', trees);
+
+/* ═══════════════════════════════════════
+   LAYER CONTROL (top-right)
+═══════════════════════════════════════ */
+L.control.layers(null, {
+    '🏫 Khuôn viên': campuses,
+    '🏢 Tòa nhà':    buildings,
+    '🌿 Mảng xanh':  greens,
+    '🅿️ Bãi xe':    parkings,
+    '📐 Tầng':       floors,
+    '🚪 Phòng':      rooms,
+    '🌳 Cây xanh':   trees
+}, { collapsed: true, position: 'topright' }).addTo(map);
+
+// Sync layer-control changes with sidebar chips
+map.on('overlayadd overlayremove', function(e) {
+    var labelMap = {
+        '🏫 Khuôn viên': 'campus', '🏢 Tòa nhà': 'building',
+        '🌿 Mảng xanh': 'green',  '🅿️ Bãi xe': 'parking',
+        '📐 Tầng': 'floor',       '🚪 Phòng': 'room',
+        '🌳 Cây xanh': 'tree'
+    };
+    var key = labelMap[e.name];
+    if (!key) return;
+    var chip = layerGrid.querySelector('[data-key="' + key + '"]');
+    if (!chip) return;
+    var active = e.type === 'overlayadd';
+    chip.classList.toggle('active', active);
+    chip.querySelector('input').checked = active;
+});
+
+/* ═══════════════════════════════════════
+   INITIAL FIT
+═══════════════════════════════════════ */
+if (campuses.getBounds().isValid()) {
+    map.fitBounds(campuses.getBounds(), { padding: [40, 40], maxZoom: 18 });
+}
+
+// Close detail when clicking blank map
+map.on('click', function() { closeDetail(); });
+</script>
 </body>
 </html>

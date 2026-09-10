@@ -9,9 +9,9 @@ class Campus(models.Model):
     campus_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255, verbose_name="Tên cơ sở")
     geom = models.PolygonField(srid=4326, verbose_name="Ranh giới khuôn viên")
-    image_1 = models.TextField(blank=True, null=True)
-    image_2 = models.TextField(blank=True, null=True)
-    image_3 = models.TextField(blank=True, null=True)
+    image_1 = models.ImageField(upload_to="campus/", blank=True, null=True, verbose_name="Hình 1")
+    image_2 = models.ImageField(upload_to="campus/", blank=True, null=True, verbose_name="Hình 2")
+    image_3 = models.ImageField(upload_to="campus/", blank=True, null=True, verbose_name="Hình 3")
 
     def __str__(self):
         return self.name
@@ -21,9 +21,9 @@ class Building(models.Model):
     campus = models.ForeignKey(Campus, on_delete=models.CASCADE, related_name='buildings')
     name = models.CharField(max_length=255, verbose_name="Tên tòa nhà")
     geom = models.PolygonField(srid=4326, verbose_name="Hình dạng tòa nhà")
-    image_1 = models.TextField(blank=True, null=True)
-    image_2 = models.TextField(blank=True, null=True)
-    image_3 = models.TextField(blank=True, null=True)
+    image_1 = models.ImageField(upload_to="building/", blank=True, null=True, verbose_name="Hình 1")
+    image_2 = models.ImageField(upload_to="building/", blank=True, null=True, verbose_name="Hình 2")
+    image_3 = models.ImageField(upload_to="building/", blank=True, null=True, verbose_name="Hình 3")
 
     def __str__(self):
         return f"{self.name} - {self.campus.name}"
@@ -51,9 +51,9 @@ class Room(models.Model):
     name = models.CharField(max_length=255, verbose_name="Tên phòng")
     room_type = models.CharField(max_length=50, choices=ROOM_TYPES, verbose_name="Loại phòng")
     geom = models.PointField(srid=4326, verbose_name="Tọa độ phòng")
-    image_1 = models.TextField(blank=True, null=True)
-    image_2 = models.TextField(blank=True, null=True)
-    image_3 = models.TextField(blank=True, null=True)
+    image_1 = models.ImageField(upload_to="room/", blank=True, null=True, verbose_name="Hình 1")
+    image_2 = models.ImageField(upload_to="room/", blank=True, null=True, verbose_name="Hình 2")
+    image_3 = models.ImageField(upload_to="room/", blank=True, null=True, verbose_name="Hình 3")
 
     def __str__(self):
         return self.name
@@ -64,9 +64,9 @@ class ParkingArea(models.Model):
     name = models.CharField(max_length=255, verbose_name="Tên bãi xe")
     capacity = models.IntegerField(verbose_name="Sức chứa dự kiến", blank=True, null=True)
     geom = models.PolygonField(srid=4326, verbose_name="Ranh giới bãi xe")
-    image_1 = models.TextField(blank=True, null=True)
-    image_2 = models.TextField(blank=True, null=True)
-    image_3 = models.TextField(blank=True, null=True)
+    image_1 = models.ImageField(upload_to="parking/", blank=True, null=True, verbose_name="Hình 1")
+    image_2 = models.ImageField(upload_to="parking/", blank=True, null=True, verbose_name="Hình 2")
+    image_3 = models.ImageField(upload_to="parking/", blank=True, null=True, verbose_name="Hình 3")
 
     def __str__(self):
         return self.name
@@ -85,9 +85,9 @@ class GreenArea(models.Model):
     name = models.CharField(max_length=255, verbose_name="Tên khu vực xanh")
     type = models.CharField(max_length=50, choices=GREEN_TYPES, verbose_name="Loại mảng xanh")
     geom = models.PolygonField(srid=4326, verbose_name="Diện tích phủ xanh")
-    image_1 = models.TextField(blank=True, null=True)
-    image_2 = models.TextField(blank=True, null=True)
-    image_3 = models.TextField(blank=True, null=True)
+    image_1 = models.ImageField(upload_to="greenarea/", blank=True, null=True, verbose_name="Hình 1")
+    image_2 = models.ImageField(upload_to="greenarea/", blank=True, null=True, verbose_name="Hình 2")
+    image_3 = models.ImageField(upload_to="greenarea/", blank=True, null=True, verbose_name="Hình 3")
 
     def __str__(self):
         return self.name
@@ -102,9 +102,9 @@ class Tree(models.Model):
     species = models.CharField(max_length=255, verbose_name="Giống cây")
     health_status = models.CharField(max_length=50, choices=HEALTH_STATUS, verbose_name="Tình trạng")
     geom = models.PointField(srid=4326, verbose_name="Tọa độ gốc cây")
-    image_1 = models.TextField(blank=True, null=True)
-    image_2 = models.TextField(blank=True, null=True)
-    image_3 = models.TextField(blank=True, null=True)
+    image_1 = models.ImageField(upload_to="tree/", blank=True, null=True, verbose_name="Hình 1")
+    image_2 = models.ImageField(upload_to="tree/", blank=True, null=True, verbose_name="Hình 2")
+    image_3 = models.ImageField(upload_to="tree/", blank=True, null=True, verbose_name="Hình 3")
 
     def __str__(self):
         return f"Cây {self.species} - ID: {self.tree_id}"
