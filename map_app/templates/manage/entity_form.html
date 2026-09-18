@@ -6,13 +6,33 @@
 {% block extra_head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
+<style>
+.form-errors-banner {
+    background: #fef2f2;
+    border: 1.5px solid #fca5a5;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: #b91c1c;
+    font-weight: 600;
+}
+.form-errors-banner p { margin: 0; }
+</style>
 {% endblock %}
 
 {% block content %}
 <form method="post" class="form-card split-form" enctype="multipart/form-data">
     {% csrf_token %}
-    {{ form.non_field_errors }}
     <div class="form-pane">
+
+        {# ── Lỗi chung (unique_together, v.v.) — đặt TRONG form-pane để không phá layout ── #}
+        {% if form.non_field_errors %}
+        <div class="form-errors-banner">
+            {% for err in form.non_field_errors %}<p>⚠️ {{ err }}</p>{% endfor %}
+        </div>
+        {% endif %}
+
         <div class="form-grid">
             {% for field in form %}
                 {% if field.name != "geom_geojson" and field.name not in cfg.media_fields %}
@@ -33,7 +53,6 @@
                     {% if field.name in cfg.media_fields %}
                     <div class="field">
                         <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                        {# Hiển thị preview ảnh hiện tại nếu có (khi sửa) #}
                         {% if not is_create %}
                             {% with current_img=field.value %}
                                 {% if current_img %}
@@ -77,8 +96,10 @@
             id="geom-map"
             class="map-box map-box-form"
             data-geom-type="{{ cfg.geom_type }}"
+            data-entity="{{ entity }}"
             data-parent-field="{{ cfg.parent_field }}"
             data-parent-url="{% if cfg.parent_entity %}{% url 'portal_parent_geom' cfg.parent_entity 0 %}{% endif %}"
+            data-context-url="{% url 'portal_entity_context' entity %}"
         ></div>
     </div>
 </form>
@@ -87,5 +108,89 @@
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-<script src="{% static 'map_app/js/geom-editor.js' %}"></script>
+<script src="{% static 'map_app/js/geom-editor.js' %}?v=5"></script>
+
+{% if entity == "phong" %}
+{# ── Cascade: Cơ sở → Tòa nhà → Tầng cho form Phòng ── #}
+<script>
+(function () {
+    var campusSel   = document.getElementById('id_campus_filter');
+    var buildingSel = document.getElementById('id_building_filter');
+    var floorSel    = document.getElementById('id_floor');
+    if (!campusSel || !buildingSel || !floorSel) return;
+
+    var API_BUILDINGS = '{% url "portal_filter_buildings" %}';
+    var API_FLOORS    = '{% url "portal_filter_floors" %}';
+
+    function setOptions(sel, items, valueFn, labelFn, keepVal) {
+        sel.innerHTML = '<option value="">— Chọn —</option>';
+        items.forEach(function (item) {
+            var opt = document.createElement('option');
+            opt.value = valueFn(item);
+            opt.textContent = labelFn(item);
+            if (String(opt.value) === String(keepVal)) opt.selected = true;
+            sel.appendChild(opt);
+        });
+    }
+
+    function loadBuildings(campusId, keepBuilding, keepFloor) {
+        buildingSel.innerHTML = '<option value="">Đang tải…</option>';
+        floorSel.innerHTML    = '<option value="">— Chọn tòa nhà trước —</option>';
+        if (!campusId) {
+            buildingSel.innerHTML = '<option value="">— Chọn cơ sở trước —</option>';
+            return;
+        }
+        fetch(API_BUILDINGS + '?campus=' + campusId)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                setOptions(buildingSel, data.buildings,
+                    function (b) { return b.pk; },
+                    function (b) { return b.name; },
+                    keepBuilding
+                );
+                // Trigger floor load nếu đã có building được chọn lại
+                if (buildingSel.value) loadFloors(buildingSel.value, keepFloor);
+            });
+    }
+
+    function loadFloors(buildingId, keepFloor) {
+        floorSel.innerHTML = '<option value="">Đang tải…</option>';
+        if (!buildingId) {
+            floorSel.innerHTML = '<option value="">— Chọn tòa nhà trước —</option>';
+            return;
+        }
+        fetch(API_FLOORS + '?building=' + buildingId)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                setOptions(floorSel, data.floors,
+                    function (f) { return f.pk; },
+                    function (f) { return f.name + '  —  Tầng ' + f.level; },
+                    keepFloor
+                );
+                // ── Quan trọng: dispatch 'change' để geom-editor.js biết floor đã được
+                //    set và load context layers (vị trí các phòng khác trong cùng tầng).
+                //    Cascade thay đổi select bằng code nên không tự có DOM event.
+                if (floorSel.value) {
+                    floorSel.dispatchEvent(new Event('change'));
+                }
+            });
+    }
+
+    campusSel.addEventListener('change', function () {
+        loadBuildings(campusSel.value, null, null);
+    });
+    buildingSel.addEventListener('change', function () {
+        loadFloors(buildingSel.value, null);
+    });
+
+    // Khởi tạo cascade khi đang edit (đã có giá trị sẵn)
+    var initCampus   = campusSel.value;
+    var initBuilding = buildingSel.value;
+    var initFloor    = floorSel.value;
+    if (initCampus) {
+        loadBuildings(initCampus, initBuilding, initFloor);
+    }
+})();
+</script>
+{% endif %}
 {% endblock %}

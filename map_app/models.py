@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.gis.db import models
+from django.core.validators import MinValueValidator
 
 # ==========================================
 # NHÓM 1: KHÔNG GIAN HẠ TẦNG (INFRASTRUCTURE)
@@ -7,7 +8,7 @@ from django.contrib.gis.db import models
 
 class Campus(models.Model):
     campus_id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255, verbose_name="Tên cơ sở")
+    name = models.CharField(max_length=255, unique=True, verbose_name="Tên cơ sở")
     geom = models.PolygonField(srid=4326, verbose_name="Ranh giới khuôn viên")
     image_1 = models.ImageField(upload_to="campus/", blank=True, null=True, verbose_name="Hình 1")
     image_2 = models.ImageField(upload_to="campus/", blank=True, null=True, verbose_name="Hình 2")
@@ -25,16 +26,29 @@ class Building(models.Model):
     image_2 = models.ImageField(upload_to="building/", blank=True, null=True, verbose_name="Hình 2")
     image_3 = models.ImageField(upload_to="building/", blank=True, null=True, verbose_name="Hình 3")
 
+    class Meta:
+        unique_together = [('campus', 'name')]
+        verbose_name = "Tòa nhà"
+        verbose_name_plural = "Tòa nhà"
+
     def __str__(self):
         return f"{self.name} - {self.campus.name}"
 
 class Floor(models.Model):
     floor_id = models.AutoField(primary_key=True)
     building = models.ForeignKey(Building, on_delete=models.CASCADE, related_name='floors')
-    level = models.IntegerField(verbose_name="Cấp độ tầng")
+    level = models.IntegerField(
+        verbose_name="Cấp độ tầng",
+        validators=[MinValueValidator(0, message="Cấp độ tầng không được là số âm.")],
+    )
     name = models.CharField(max_length=255, verbose_name="Tên tầng")
     geom = models.PolygonField(srid=4326, verbose_name="Ranh giới tầng")
     blueprint_url = models.TextField(blank=True, null=True, verbose_name="Link bản vẽ mặt bằng")
+
+    class Meta:
+        unique_together = [('building', 'level')]
+        verbose_name = "Tầng"
+        verbose_name_plural = "Các tầng"
 
     def __str__(self):
         return f"{self.name} ({self.building.name})"
@@ -55,6 +69,11 @@ class Room(models.Model):
     image_2 = models.ImageField(upload_to="room/", blank=True, null=True, verbose_name="Hình 2")
     image_3 = models.ImageField(upload_to="room/", blank=True, null=True, verbose_name="Hình 3")
 
+    class Meta:
+        unique_together = [('floor', 'name')]
+        verbose_name = "Phòng"
+        verbose_name_plural = "Các phòng"
+
     def __str__(self):
         return self.name
 
@@ -67,6 +86,11 @@ class ParkingArea(models.Model):
     image_1 = models.ImageField(upload_to="parking/", blank=True, null=True, verbose_name="Hình 1")
     image_2 = models.ImageField(upload_to="parking/", blank=True, null=True, verbose_name="Hình 2")
     image_3 = models.ImageField(upload_to="parking/", blank=True, null=True, verbose_name="Hình 3")
+
+    class Meta:
+        unique_together = [('campus', 'name')]
+        verbose_name = "Bãi xe"
+        verbose_name_plural = "Bãi xe"
 
     def __str__(self):
         return self.name
@@ -89,6 +113,11 @@ class GreenArea(models.Model):
     image_2 = models.ImageField(upload_to="greenarea/", blank=True, null=True, verbose_name="Hình 2")
     image_3 = models.ImageField(upload_to="greenarea/", blank=True, null=True, verbose_name="Hình 3")
 
+    class Meta:
+        unique_together = [('campus', 'name')]
+        verbose_name = "Mảng xanh"
+        verbose_name_plural = "Mảng xanh"
+
     def __str__(self):
         return self.name
 
@@ -108,6 +137,7 @@ class Tree(models.Model):
 
     def __str__(self):
         return f"Cây {self.species} - ID: {self.tree_id}"
+
 
 
 # ==========================================

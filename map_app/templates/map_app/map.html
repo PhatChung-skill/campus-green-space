@@ -442,11 +442,31 @@ function toggleSidebar() {
 var map = L.map('map', { zoomControl: false }).setView([10.7936, 106.6661], 17);
 L.control.zoom({ position: 'topright' }).addTo(map);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 22,
-    maxNativeZoom: 19,
-    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> · HCMUNRE'
-}).addTo(map);
+// ── Basemap 1: Đường phố (Esri) — maxNativeZoom 17 an toàn toàn cầu
+var streetLayer = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    {
+        maxZoom: 22,
+        maxNativeZoom: 17,   // Esri Street có tile ổn định đến z17 toàn Việt Nam
+        attribution: 'Tiles &copy; <a href="https://www.esri.com">Esri</a>'
+    }
+);
+
+// ── Basemap 2: Vệ tinh (Esri) — hình ảnh thực, maxNativeZoom 20 tại TP.HCM
+var satelliteLayer = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {
+        maxZoom: 22,
+        maxNativeZoom: 20,   // Esri Imagery có ảnh vệ tinh độ phân giải cao đến z20 tại đô thị
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, GeoEye, USGS'
+    }
+);
+
+// Mặc định hiển thị đường phố
+streetLayer.addTo(map);
+
+
+
 
 /* ═══════════════════════════════════════
    RAW DATA
@@ -848,15 +868,24 @@ registerLayer('tree', trees);
 /* ═══════════════════════════════════════
    LAYER CONTROL (top-right)
 ═══════════════════════════════════════ */
-L.control.layers(null, {
-    '🏫 Khuôn viên': campuses,
-    '🏢 Tòa nhà':    buildings,
-    '🌿 Mảng xanh':  greens,
-    '🅿️ Bãi xe':    parkings,
-    '📐 Tầng':       floors,
-    '🚪 Phòng':      rooms,
-    '🌳 Cây xanh':   trees
-}, { collapsed: true, position: 'topright' }).addTo(map);
+L.control.layers(
+    // Basemaps (radio buttons)
+    {
+        '🗺️ Đường phố': streetLayer,
+        '🛰️ Vệ tinh':   satelliteLayer
+    },
+    // Overlays (checkboxes)
+    {
+        '🏫 Khuôn viên': campuses,
+        '🏢 Tòa nhà':    buildings,
+        '🌿 Mảng xanh':  greens,
+        '🅿️ Bãi xe':    parkings,
+        '📐 Tầng':       floors,
+        '🚪 Phòng':      rooms,
+        '🌳 Cây xanh':   trees
+    },
+    { collapsed: true, position: 'topright' }
+).addTo(map);
 
 // Sync layer-control changes with sidebar chips
 map.on('overlayadd overlayremove', function(e) {

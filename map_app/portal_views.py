@@ -140,6 +140,97 @@ def parent_geom(request, entity, pk):
     return JsonResponse(json.loads(obj.geom.geojson))
 
 
+@portal_required
+def entity_context_geojson(request, entity):
+    """
+    Trả về các lớp GeoJSON ngữ cảnh để hiển thị trên map khi thêm/sửa dữ liệu.
+    Tham số GET: campus, building, floor (là pk của đối tượng cha tương ứng)
+    """
+    campus_id  = request.GET.get("campus")
+    building_id = request.GET.get("building")
+    floor_id   = request.GET.get("floor")
+    layers = {}
+
+    def to_geojson(qs, fields):
+        return json.loads(serialize("geojson", qs, geometry_field="geom", fields=fields))
+
+    if entity == "toa-nha":
+        if campus_id:
+            layers["campus"]   = to_geojson(Campus.objects.filter(pk=campus_id),                    ["name"])
+            layers["buildings"]= to_geojson(Building.objects.filter(campus_id=campus_id),            ["name"])
+            layers["greens"]   = to_geojson(GreenArea.objects.filter(campus_id=campus_id),           ["name"])
+            layers["parkings"] = to_geojson(ParkingArea.objects.filter(campus_id=campus_id),         ["name"])
+            layers["trees"]    = to_geojson(Tree.objects.filter(campus_id=campus_id),                ["species"])
+
+    elif entity == "tang":
+        if building_id:
+            bld_qs = Building.objects.filter(pk=building_id).select_related("campus")
+            if bld_qs.exists():
+                bld = bld_qs.first()
+                layers["campus"]   = to_geojson(Campus.objects.filter(pk=bld.campus_id),  ["name"])
+                layers["building"] = to_geojson(bld_qs,                                    ["name"])
+                layers["floors"]   = to_geojson(Floor.objects.filter(building_id=building_id), ["name", "level"])
+
+    elif entity == "phong":
+        if floor_id:
+            flr_qs = Floor.objects.filter(pk=floor_id).select_related("building__campus")
+            if flr_qs.exists():
+                flr = flr_qs.first()
+                layers["campus"]   = to_geojson(Campus.objects.filter(pk=flr.building.campus_id), ["name"])
+                layers["building"] = to_geojson(Building.objects.filter(pk=flr.building_id),       ["name"])
+                layers["floor"]    = to_geojson(flr_qs,                                            ["name", "level"])
+                layers["rooms"]    = to_geojson(Room.objects.filter(floor_id=floor_id),            ["name", "room_type"])
+
+    elif entity == "bai-xe":
+        # Bãi xe: hiện khuôn viên + tòa nhà + mảng xanh + bãi xe đã có để vẽ chính xác hơn
+        if campus_id:
+            layers["campus"]   = to_geojson(Campus.objects.filter(pk=campus_id),              ["name"])
+            layers["buildings"]= to_geojson(Building.objects.filter(campus_id=campus_id),     ["name"])
+            layers["greens"]   = to_geojson(GreenArea.objects.filter(campus_id=campus_id),    ["name"])
+            layers["parkings"] = to_geojson(ParkingArea.objects.filter(campus_id=campus_id),  ["name"])
+
+    elif entity == "mang-xanh":
+        if campus_id:
+            layers["campus"]   = to_geojson(Campus.objects.filter(pk=campus_id),              ["name"])
+            layers["greens"]   = to_geojson(GreenArea.objects.filter(campus_id=campus_id),    ["name"])
+            layers["buildings"]= to_geojson(Building.objects.filter(campus_id=campus_id),     ["name"])
+
+    elif entity == "cay-xanh":
+        if campus_id:
+            layers["campus"]   = to_geojson(Campus.objects.filter(pk=campus_id),              ["name"])
+            layers["trees"]    = to_geojson(Tree.objects.filter(campus_id=campus_id),         ["species"])
+            layers["greens"]   = to_geojson(GreenArea.objects.filter(campus_id=campus_id),    ["name"])
+            layers["buildings"]= to_geojson(Building.objects.filter(campus_id=campus_id),     ["name"])
+
+    elif entity == "co-so":
+        layers["campuses"] = to_geojson(Campus.objects.all(), ["name"])
+
+    return JsonResponse(layers)
+
+
+@portal_required
+def filter_buildings(request):
+    """API: Trả về danh sách tòa nhà theo cơ sở, dùng cho cascade dropdown phòng."""
+    campus_id = request.GET.get("campus")
+    if campus_id:
+        buildings = list(Building.objects.filter(campus_id=campus_id).order_by("name").values("pk", "name"))
+    else:
+        buildings = list(Building.objects.order_by("name").values("pk", "name"))
+    return JsonResponse({"buildings": buildings})
+
+
+@portal_required
+def filter_floors(request):
+    """API: Trả về danh sách tầng theo tòa nhà, dùng cho cascade dropdown phòng."""
+    building_id = request.GET.get("building")
+    if building_id:
+        floors = list(Floor.objects.filter(building_id=building_id).order_by("level").values("pk", "name", "level"))
+    else:
+        floors = []
+    return JsonResponse({"floors": floors})
+
+
+
 @perm_required("view", "users")
 def user_list(request):
     q = request.GET.get("q", "").strip()

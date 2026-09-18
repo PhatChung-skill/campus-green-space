@@ -9,6 +9,13 @@ urlpatterns = [
         portal_views.parent_geom,
         name="portal_parent_geom",
     ),
+    path(
+        "api/context/<slug:entity>/",
+        portal_views.entity_context_geojson,
+        name="portal_entity_context",
+    ),
+    path("api/buildings/", portal_views.filter_buildings, name="portal_filter_buildings"),
+    path("api/floors/",    portal_views.filter_floors,    name="portal_filter_floors"),
     path("nguoi-dung/", portal_views.user_list, name="portal_users"),
     path("nguoi-dung/them/", portal_views.user_create, name="portal_user_create"),
     path("nguoi-dung/<int:pk>/sua/", portal_views.user_update, name="portal_user_edit"),

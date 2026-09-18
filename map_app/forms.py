@@ -105,6 +105,29 @@ class BuildingForm(GeomModelForm):
             "image_3": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
         }
 
+    def clean(self):
+        cleaned_data = super().clean()
+        campus = cleaned_data.get("campus")
+        name = cleaned_data.get("name")
+        if campus and name and "name" not in self.errors:
+            qs = Building.objects.filter(campus=campus, name__iexact=name)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                self.add_error(
+                    "name",
+                    f"Tòa nhà \"{name}\" đã tồn tại trong cơ sở \"{campus.name}\". "
+                    "Vui lòng đặt tên khác.",
+                )
+        return cleaned_data
+
+    def validate_unique(self):
+        # clean() đã xử lý → bỏ qua lỗi model-level generic để tránh phá layout
+        try:
+            super().validate_unique()
+        except forms.ValidationError:
+            pass
+
 
 class FloorForm(GeomModelForm):
     geom_type = "Polygon"
@@ -114,14 +137,64 @@ class FloorForm(GeomModelForm):
         fields = ["building", "level", "name", "blueprint_url"]
         widgets = {
             "building": forms.Select(attrs=SELECT_CLASS),
-            "level": forms.NumberInput(attrs=INPUT_CLASS),
+            "level": forms.NumberInput(attrs={**INPUT_CLASS, "min": "0"}),
             "name": forms.TextInput(attrs=INPUT_CLASS),
             "blueprint_url": forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "https://..."}),
         }
 
+    def clean_level(self):
+        level = self.cleaned_data.get("level")
+        if level is not None and level < 0:
+            raise forms.ValidationError(
+                "Cấp độ tầng không được là số âm. Vui lòng nhập số từ 0 trở lên."
+            )
+        return level
+
+    def clean(self):
+        cleaned_data = super().clean()
+        building = cleaned_data.get("building")
+        level = cleaned_data.get("level")
+        if building and level is not None and "level" not in self.errors:
+            qs = Floor.objects.filter(building=building, level=level)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                self.add_error(
+                    "level",
+                    f"Tầng {level} đã tồn tại trong tòa nhà \"{building.name}\". "
+                    "Vui lòng chọn cấp độ tầng khác.",
+                )
+        return cleaned_data
+
+    def validate_unique(self):
+        # clean() đã xử lý → bỏ qua lỗi model-level generic để tránh phá layout
+        try:
+            super().validate_unique()
+        except forms.ValidationError:
+            pass
+
 
 class RoomForm(GeomModelForm):
+    # ── Virtual fields cho cascade lọc: không lưu vào DB ──
+    campus_filter = forms.ModelChoiceField(
+        queryset=Campus.objects.all(),
+        required=False,
+        label="Lọc theo cơ sở",
+        widget=forms.Select(attrs=SELECT_CLASS),
+    )
+    building_filter = forms.ModelChoiceField(
+        queryset=Building.objects.all(),
+        required=False,
+        label="Lọc theo tòa nhà",
+        widget=forms.Select(attrs=SELECT_CLASS),
+    )
+
+
     geom_type = "Point"
+
+    # Thứ tự hiển thị: cascade trước, floor sau
+    field_order = ["campus_filter", "building_filter", "floor", "name", "room_type",
+                   "image_1", "image_2", "image_3"]
 
     class Meta:
         model = Room
@@ -136,6 +209,41 @@ class RoomForm(GeomModelForm):
             "image_3": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Pre-populate virtual fields khi đang edit phòng hiện có
+        if self.instance and self.instance.pk:
+            try:
+                floor = self.instance.floor
+                self.fields["building_filter"].initial = floor.building_id
+                self.fields["campus_filter"].initial   = floor.building.campus_id
+            except Exception:
+                pass
+
+    def clean(self):
+        cleaned_data = super().clean()
+        floor = cleaned_data.get("floor")
+        name = cleaned_data.get("name")
+        if floor and name and "name" not in self.errors:
+            qs = Room.objects.filter(floor=floor, name__iexact=name)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                self.add_error(
+                    "name",
+                    f"Phòng \"{name}\" đã tồn tại trong tầng \"{floor.name}\". "
+                    "Vui lòng đặt tên phòng khác.",
+                )
+        return cleaned_data
+
+    def validate_unique(self):
+        # clean() đã kiểm tra và đưa lỗi vào field cụ thể → bỏ qua lỗi model-level generic
+        try:
+            super().validate_unique()
+        except forms.ValidationError:
+            pass
+
+
 
 class ParkingAreaForm(GeomModelForm):
     geom_type = "Polygon"
@@ -147,11 +255,26 @@ class ParkingAreaForm(GeomModelForm):
         widgets = {
             "campus": forms.Select(attrs=SELECT_CLASS),
             "name": forms.TextInput(attrs=INPUT_CLASS),
-            "capacity": forms.NumberInput(attrs=INPUT_CLASS),
+            "capacity": forms.NumberInput(attrs={**INPUT_CLASS, "min": "0"}),
             "image_1": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
             "image_2": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
             "image_3": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        campus = cleaned_data.get("campus")
+        name = cleaned_data.get("name")
+        if campus and name and "name" not in self.errors:
+            qs = ParkingArea.objects.filter(campus=campus, name__iexact=name)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                self.add_error(
+                    "name",
+                    f"Bãi xe \"{name}\" đã tồn tại trong cơ sở \"{campus.name}\".",
+                )
+        return cleaned_data
 
 
 class GreenAreaForm(GeomModelForm):
@@ -170,6 +293,21 @@ class GreenAreaForm(GeomModelForm):
             "image_3": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
         }
 
+    def clean(self):
+        cleaned_data = super().clean()
+        campus = cleaned_data.get("campus")
+        name = cleaned_data.get("name")
+        if campus and name and "name" not in self.errors:
+            qs = GreenArea.objects.filter(campus=campus, name__iexact=name)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                self.add_error(
+                    "name",
+                    f"Mảng xanh \"{name}\" đã tồn tại trong cơ sở \"{campus.name}\".",
+                )
+        return cleaned_data
+
 
 class TreeForm(GeomModelForm):
     geom_type = "Point"
@@ -186,6 +324,7 @@ class TreeForm(GeomModelForm):
             "image_2": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
             "image_3": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
         }
+
 
 
 ROLE_CHECKBOX_FIELDS = [

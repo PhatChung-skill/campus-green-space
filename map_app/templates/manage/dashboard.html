@@ -58,9 +58,10 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     const dashMap = L.map("dash-map").setView([10.7936, 106.6661], 16);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 22,
-        attribution: "© OpenStreetMap"
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
+        maxZoom: 23,
+        maxNativeZoom: 20,
+        attribution: "Tiles &copy; Esri &mdash; Source: Esri, HERE, Garmin, OpenStreetMap"
     }).addTo(dashMap);
     const data = JSON.parse("{{ campuses_geojson|escapejs }}");
     const layer = L.geoJSON(data, {
