@@ -4,424 +4,303 @@
     <title>Cổng Không gian xanh - HCMUNRE</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Cổng thông tin tra cứu không gian xanh HCMUNRE">
     {% load static %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-/* ══════════════════════════════════════════
-   RESET & BASE
-══════════════════════════════════════════ */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body {
-    height: 100%; overflow: hidden;
-    font-family: "Be Vietnam Pro", "Segoe UI", sans-serif;
-    font-size: 14px; color: #0b3d2e;
-}
+/* ══ RESET ══ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:"Be Vietnam Pro","Segoe UI",sans-serif;font-size:14px;color:#0b3d2e}
 
-/* ══════════════════════════════════════════
-   APP SHELL
-══════════════════════════════════════════ */
-#app {
-    display: flex;
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden;
-}
+/* ══ APP SHELL ══ */
+#app{display:flex;height:100vh;width:100vw;overflow:hidden}
 
-/* ══════════════════════════════════════════
-   SIDEBAR
-══════════════════════════════════════════ */
-#sidebar {
-    width: 320px;
-    min-width: 320px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    background: #f7fbf8;
-    border-right: 1px solid #cde5d6;
-    z-index: 10;
-    overflow: hidden;
-    transition: transform .3s ease;
+/* ══ SIDEBAR ══ */
+#sidebar{
+  width:320px;min-width:320px;height:100%;
+  display:flex;flex-direction:column;
+  background:#f7fbf8;border-right:1px solid #cde5d6;
+  z-index:10;overflow:hidden;transition:transform .3s ease;
 }
 
 /* Header */
-.sb-header {
-    background: linear-gradient(160deg, #0b3d2e 0%, #14532d 100%);
-    color: #edf8f1;
-    padding: 18px 18px 14px;
-    flex-shrink: 0;
-}
-.sb-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 14px;
-}
-.sb-brand-icon {
-    width: 36px; height: 36px;
-    background: rgba(255,255,255,.12);
-    border-radius: 12px;
-    display: grid; place-items: center;
-    flex-shrink: 0;
-}
-.sb-brand h1 {
-    font-size: 13px; font-weight: 700;
-    letter-spacing: .06em; text-transform: uppercase;
-    line-height: 1.4;
-}
-.sb-brand p {
-    font-size: 11px; color: #9ecbb2; margin-top: 2px;
-}
+.sb-header{background:linear-gradient(160deg,#0b3d2e 0%,#14532d 100%);color:#edf8f1;padding:18px 18px 14px;flex-shrink:0}
+.sb-brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.sb-brand-icon{width:36px;height:36px;background:rgba(255,255,255,.12);border-radius:12px;display:grid;place-items:center;flex-shrink:0}
+.sb-brand h1{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;line-height:1.4}
+.sb-brand p{font-size:11px;color:#9ecbb2;margin-top:2px}
+.sb-campus-wrap{position:relative}
+.sb-campus-label{display:block;font-size:11px;font-weight:600;color:#9ecbb2;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+#campus-select{width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:12px;color:#edf8f1;padding:10px 38px 10px 12px;font:inherit;font-size:13px;appearance:none;cursor:pointer;transition:background .15s}
+#campus-select:focus{outline:2px solid #86efac}
+#campus-select option{background:#0b3d2e;color:#edf8f1}
+.sb-campus-wrap::after{content:'▾';position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#9ecbb2;pointer-events:none;font-size:12px;margin-top:10px}
 
-/* Campus selector */
-.sb-campus-wrap { position: relative; }
-.sb-campus-label {
-    display: block; font-size: 11px; font-weight: 600;
-    color: #9ecbb2; text-transform: uppercase; letter-spacing: .08em;
-    margin-bottom: 6px;
-}
-#campus-select {
-    width: 100%;
-    background: rgba(255,255,255,.1);
-    border: 1px solid rgba(255,255,255,.2);
-    border-radius: 12px;
-    color: #edf8f1;
-    padding: 10px 38px 10px 12px;
-    font: inherit; font-size: 13px;
-    appearance: none; cursor: pointer;
-    transition: background .15s;
-}
-#campus-select:focus { outline: 2px solid #86efac; }
-#campus-select option { background: #0b3d2e; color: #edf8f1; }
-.sb-campus-wrap::after {
-    content: '▾';
-    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-    color: #9ecbb2; pointer-events: none; font-size: 12px;
-    margin-top: 10px;
-}
+/* Layer chips */
+.sb-section{padding:14px 16px;border-bottom:1px solid #cde5d6;flex-shrink:0}
+.sb-section-title{font-size:11px;font-weight:700;color:#5c7468;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.layer-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.layer-chip{display:flex;align-items:center;gap:7px;padding:7px 10px;border:1.5px solid #cde5d6;border-radius:10px;cursor:pointer;font-size:12.5px;font-weight:600;color:#1f7a4d;background:white;user-select:none;transition:all .15s}
+.layer-chip input{display:none}
+.layer-chip .chip-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.layer-chip.active{background:#eef7f1;border-color:#2f9e63}
+.layer-chip:hover{border-color:#2f9e63}
 
-/* Layers panel */
-.sb-section {
-    padding: 14px 16px;
-    border-bottom: 1px solid #cde5d6;
-    flex-shrink: 0;
-}
-.sb-section-title {
-    font-size: 11px; font-weight: 700; color: #5c7468;
-    text-transform: uppercase; letter-spacing: .08em;
-    margin-bottom: 10px;
-}
-.layer-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-}
-.layer-chip {
-    display: flex; align-items: center; gap: 7px;
-    padding: 7px 10px;
-    border: 1.5px solid #cde5d6;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 12.5px; font-weight: 600;
-    color: #1f7a4d;
-    background: white;
-    user-select: none;
-    transition: all .15s;
-}
-.layer-chip input { display: none; }
-.layer-chip .chip-dot {
-    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
-}
-.layer-chip.active { background: #eef7f1; border-color: #2f9e63; }
-.layer-chip:hover { border-color: #2f9e63; }
+/* ═══════════════════════════════════════
+   DRILL-DOWN PANELS
+   Sidebar chỉ hiện 1 panel tại một thời điểm:
+   browse-panel | building-panel | floor-panel | room-panel
+═══════════════════════════════════════ */
 
-/* ── Detail Panel ── */
-#detail-panel {
-    flex: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    animation: slideIn .22s ease;
-}
-#detail-empty {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    color: #5c7468;
-    padding: 32px 20px;
-    text-align: center;
-}
-#detail-empty .empty-icon {
-    font-size: 48px; opacity: .5;
-}
-#detail-empty p { font-size: 13px; line-height: 1.6; }
+/* Panel chung */
+.drill-panel{display:none;flex-direction:column;flex:1;min-height:0}
+.drill-panel.active{display:flex}
 
-@keyframes slideIn {
-    from { opacity: 0; transform: translateX(-8px); }
-    to   { opacity: 1; transform: none; }
-}
+/* ── Browse panel (empty state + detail khi click cây/green/parking/campus) */
+#browse-panel{overflow-y:auto}
+#detail-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#5c7468;padding:32px 20px;text-align:center}
+#detail-empty .empty-icon{font-size:48px;opacity:.5}
+#detail-empty p{font-size:13px;line-height:1.6}
+#carousel{position:relative;background:#e2e8f0;overflow:hidden;flex-shrink:0;display:none}
+#carousel-track{display:flex;transition:transform .3s cubic-bezier(.4,0,.2,1);height:200px}
+#carousel-track img{width:320px;min-width:320px;height:200px;object-fit:cover;flex-shrink:0;display:block}
+.carousel-no-img{width:320px;height:140px;background:linear-gradient(135deg,#0b3d2e 0%,#1f7a4d 100%);display:flex;align-items:center;justify-content:center;font-size:52px;color:#bbf7d0;flex-shrink:0}
+#detail-body{padding:16px;flex:1;display:none}
 
-/* Carousel */
-#carousel {
-    position: relative;
-    background: #e2e8f0;
-    overflow: hidden;
-    flex-shrink: 0;
-}
-#carousel-track {
-    display: flex;
-    transition: transform .3s cubic-bezier(.4,0,.2,1);
-    height: 200px;
-}
-#carousel-track img {
-    width: 320px; min-width: 320px; height: 200px;
-    object-fit: cover; flex-shrink: 0; display: block;
-}
-.carousel-no-img {
-    width: 320px; height: 140px;
-    background: linear-gradient(135deg, #0b3d2e 0%, #1f7a4d 100%);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 52px; color: #bbf7d0;
-    flex-shrink: 0;
-}
-.carousel-btn {
-    position: absolute; top: 50%; transform: translateY(-50%);
-    width: 32px; height: 32px;
-    background: rgba(0,0,0,.45); color: white; border: 0;
-    border-radius: 50%; font-size: 16px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: background .15s; z-index: 2;
-    line-height: 1;
-}
-.carousel-btn:hover { background: rgba(0,0,0,.65); }
-#btn-prev { left: 8px; }
-#btn-next { right: 8px; }
-.carousel-dots {
-    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
-    display: flex; gap: 5px; z-index: 2;
-}
-.carousel-dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: rgba(255,255,255,.5);
-    transition: background .2s, transform .2s;
-}
-.carousel-dot.active {
-    background: white; transform: scale(1.3);
-}
+/* ── Panel header (dùng chung cho building/floor/room) */
+.dp-header{padding:12px 16px 10px;border-bottom:1px solid #cde5d6;flex-shrink:0;display:flex;flex-direction:column;gap:6px}
+.dp-nav{display:flex;align-items:center;justify-content:space-between}
+.dp-back{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#5c7468;background:none;border:0;cursor:pointer;padding:0;transition:color .15s}
+.dp-back:hover{color:#0b3d2e}
+.dp-reset{background:#eef7f1;border:1.5px solid #cde5d6;border-radius:10px;width:32px;height:32px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+.dp-reset:hover{background:#d8f3e3}
+.dp-title{font-size:16px;font-weight:700;color:#0b3d2e}
+.dp-subtitle{font-size:12px;color:#5c7468;margin-top:1px}
 
-/* Detail body */
-#detail-body { padding: 16px; flex: 1; }
+/* ── Building panel ── */
+#building-panel .bp-img{position:relative;background:#e2e8f0;overflow:hidden;flex-shrink:0;display:none}
+#bp-track{display:flex;transition:transform .3s ease;height:150px}
+#bp-track img{width:320px;min-width:320px;height:150px;object-fit:cover;flex-shrink:0;display:block}
+#building-panel .bp-scroll{flex:1;min-height:0;overflow-y:auto;padding:14px 16px}
 
-.detail-badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-size: 10px; font-weight: 700;
-    letter-spacing: .08em; text-transform: uppercase;
-    padding: 3px 10px; border-radius: 999px;
-    margin-bottom: 8px;
-}
-.badge-campus  { background:#d8f3e3; color:#14532d; }
-.badge-building{ background:#fef9c3; color:#854d0e; }
-.badge-green   { background:#dcfce7; color:#15803d; }
-.badge-parking { background:#dbeafe; color:#1e40af; }
-.badge-tree    { background:#f0fdf4; color:#166534; }
-.badge-room    { background:#fce7f3; color:#9d174d; }
-.badge-floor   { background:#fff7ed; color:#c2410c; }
+/* ── Floor panel ── */
+#floor-panel .fp-scroll{flex:1;min-height:0;overflow-y:auto;padding:14px 16px}
+.floor-chip-list{display:flex;flex-direction:column;gap:6px}
+.floor-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1.5px solid #cde5d6;background:white;cursor:pointer;transition:all .15s;font-size:13px}
+.floor-item:hover{border-color:#fb923c;background:#fff7ed}
+.floor-item.active{border-color:#ea580c;background:#fff7ed;font-weight:600}
+.floor-badge{min-width:28px;height:28px;border-radius:8px;background:#fff7ed;border:1.5px solid #fed7aa;color:#c2410c;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.floor-item.active .floor-badge{background:#ea580c;color:white;border-color:#ea580c}
+.floor-name{flex:1}
+.floor-room-count{font-size:11px;color:#5c7468;font-weight:400}
+.no-data-msg{font-size:12px;color:#5c7468;text-align:center;padding:16px 0}
+.loading-msg{font-size:12px;color:#5c7468;text-align:center;padding:16px 0}
 
-#detail-title {
-    font-size: 18px; font-weight: 700; color: #0b3d2e;
-    line-height: 1.3; margin-bottom: 14px;
-}
+/* ── Room panel ── */
+#room-panel .rp-list{flex:1;min-height:0;overflow-y:auto;padding:14px 16px}
+.room-list{display:flex;flex-direction:column;gap:5px}
+.room-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;border:1.5px solid #fce7f3;background:#fdf2f8;cursor:pointer;transition:all .15s;font-size:12.5px}
+.room-item:hover{border-color:#db2777;background:#fce7f3}
+.room-item.active{border-color:#be185d;background:#fce7f3;font-weight:600}
+.room-dot{width:10px;height:10px;border-radius:50%;background:#f9a8d4;border:1.5px solid #db2777;flex-shrink:0}
+.room-title{font-weight:600}
+.room-type-label{font-size:11px;color:#9d174d}
 
-.detail-meta {
-    list-style: none;
-    display: flex; flex-direction: column; gap: 9px;
-    margin-bottom: 16px;
-}
-.detail-meta li {
-    display: flex; gap: 10px; align-items: flex-start;
-    padding-bottom: 9px;
-    border-bottom: 1px solid #e8f4ed;
-    font-size: 13px;
-}
-.detail-meta li:last-child { border-bottom: 0; padding-bottom: 0; }
-.meta-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
-.meta-label { color: #5c7468; font-size: 11px; margin-bottom: 2px; }
-.meta-value { color: #0b3d2e; font-weight: 600; }
+/* ── Room detail panel ── */
+#room-detail-panel .rdp-scroll{flex:1;min-height:0;overflow-y:auto;padding:16px}
+#rdp-img-wrap{position:relative;background:#e2e8f0;overflow:hidden;border-radius:12px;margin-bottom:14px;display:none}
+#rdp-track{display:flex;transition:transform .3s ease;height:160px}
+#rdp-track img{width:288px;min-width:288px;height:160px;object-fit:cover;flex-shrink:0;display:block;border-radius:10px}
 
-.detail-close-btn {
-    width: 100%;
-    padding: 10px;
-    background: #eef7f1;
-    border: 1.5px solid #cde5d6;
-    border-radius: 12px;
-    color: #14532d;
-    font: inherit; font-weight: 650; font-size: 13px;
-    cursor: pointer;
-    transition: background .15s;
-    margin-top: 4px;
-}
-.detail-close-btn:hover { background: #d8f3e3; }
+/* Shared detail meta */
+.detail-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border-radius:999px;margin-bottom:8px}
+.badge-campus{background:#d8f3e3;color:#14532d}
+.badge-building{background:#fef9c3;color:#854d0e}
+.badge-green{background:#dcfce7;color:#15803d}
+.badge-parking{background:#dbeafe;color:#1e40af}
+.badge-tree{background:#f0fdf4;color:#166534}
+.badge-room{background:#fce7f3;color:#9d174d}
+.badge-floor{background:#fff7ed;color:#c2410c}
+.detail-title{font-size:18px;font-weight:700;color:#0b3d2e;line-height:1.3;margin-bottom:14px}
+.detail-meta{list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:16px}
+.detail-meta li{display:flex;gap:10px;align-items:flex-start;padding-bottom:9px;border-bottom:1px solid #e8f4ed;font-size:13px}
+.detail-meta li:last-child{border-bottom:0;padding-bottom:0}
+.meta-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.meta-label{color:#5c7468;font-size:11px;margin-bottom:2px}
+.meta-value{color:#0b3d2e;font-weight:600}
+.detail-close-btn{width:100%;padding:10px;background:#eef7f1;border:1.5px solid #cde5d6;border-radius:12px;color:#14532d;font:inherit;font-weight:650;font-size:13px;cursor:pointer;transition:background .15s;margin-top:4px}
+.detail-close-btn:hover{background:#d8f3e3}
 
-/* Auth buttons in sidebar footer */
-.sb-footer {
-    padding: 12px 16px;
-    border-top: 1px solid #cde5d6;
-    display: flex; gap: 8px;
-    flex-shrink: 0;
-    background: white;
-}
-.sb-btn {
-    flex: 1;
-    padding: 9px 8px;
-    border-radius: 12px;
-    font: inherit; font-size: 13px; font-weight: 650;
-    cursor: pointer; border: 0;
-    text-decoration: none;
-    text-align: center;
-    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-    transition: background .15s;
-}
-.sb-btn-primary { background: #1f7a4d; color: white; }
-.sb-btn-primary:hover { background: #14532d; }
-.sb-btn-outline {
-    background: white; color: #1f7a4d;
-    border: 1.5px solid #cde5d6;
-}
-.sb-btn-outline:hover { background: #eef7f1; }
+/* Carousel shared */
+.carousel-btn{position:absolute;top:50%;transform:translateY(-50%);width:32px;height:32px;background:rgba(0,0,0,.45);color:white;border:0;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;z-index:2;line-height:1}
+.carousel-btn:hover{background:rgba(0,0,0,.65)}
+.carousel-btn.prev{left:8px}.carousel-btn.next{right:8px}
+.carousel-dots{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:2}
+.carousel-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.5);transition:background .2s,transform .2s;cursor:pointer}
+.carousel-dot.active{background:white;transform:scale(1.3)}
 
-/* ══════════════════════════════════════════
-   MAP AREA
-══════════════════════════════════════════ */
-#map-wrap { flex: 1; position: relative; overflow: hidden; }
-#map { width: 100%; height: 100%; }
+/* Footer */
+.sb-footer{padding:12px 16px;border-top:1px solid #cde5d6;display:flex;gap:8px;flex-shrink:0;background:white}
+.sb-btn{flex:1;padding:9px 8px;border-radius:12px;font:inherit;font-size:13px;font-weight:650;cursor:pointer;border:0;text-decoration:none;text-align:center;display:inline-flex;align-items:center;justify-content:center;gap:5px;transition:background .15s}
+.sb-btn-primary{background:#1f7a4d;color:white}
+.sb-btn-primary:hover{background:#14532d}
+.sb-btn-outline{background:white;color:#1f7a4d;border:1.5px solid #cde5d6}
+.sb-btn-outline:hover{background:#eef7f1}
 
-/* Sidebar toggle on mobile */
-#sidebar-toggle {
-    display: none;
-    position: absolute;
-    top: 12px; left: 12px;
-    z-index: 800;
-    background: rgba(11,61,46,.9);
-    color: #d8f3e3;
-    border: 0; border-radius: 12px;
-    padding: 10px 14px;
-    font: inherit; font-size: 13px; font-weight: 650;
-    cursor: pointer;
-}
+/* Map */
+#map-wrap{flex:1;position:relative;overflow:hidden}
+#map{width:100%;height:100%}
+#sidebar-toggle{display:none;position:absolute;top:12px;left:12px;z-index:800;background:rgba(11,61,46,.9);color:#d8f3e3;border:0;border-radius:12px;padding:10px 14px;font:inherit;font-size:13px;font-weight:650;cursor:pointer}
+.leaflet-top.leaflet-right{top:12px!important;right:12px!important}
+.leaflet-control-layers{border-radius:14px!important;box-shadow:0 4px 20px rgba(11,61,46,.15)!important;font-family:inherit!important;font-size:13px!important}
 
-/* Leaflet layer control position */
-.leaflet-top.leaflet-right { top: 12px !important; right: 12px !important; }
-.leaflet-control-layers {
-    border-radius: 14px !important;
-    box-shadow: 0 4px 20px rgba(11,61,46,.15) !important;
-    font-family: inherit !important;
-    font-size: 13px !important;
-}
-
-/* ══════════════════════════════════════════
-   RESPONSIVE
-══════════════════════════════════════════ */
-@media (max-width: 768px) {
-    #sidebar {
-        position: absolute; left: 0; top: 0; height: 100%;
-        transform: translateX(-100%); z-index: 900;
-    }
-    #sidebar.open { transform: none; box-shadow: 4px 0 24px rgba(0,0,0,.2); }
-    #sidebar-toggle { display: flex; }
-    #map-wrap { width: 100%; }
+@media(max-width:768px){
+  #sidebar{position:absolute;left:0;top:0;height:100%;transform:translateX(-100%);z-index:900}
+  #sidebar.open{transform:none;box-shadow:4px 0 24px rgba(0,0,0,.2)}
+  #sidebar-toggle{display:flex}
+  #map-wrap{width:100%}
 }
     </style>
 </head>
 <body>
 <div id="app">
 
-    <!-- ════════════ SIDEBAR ════════════ -->
-    <aside id="sidebar">
+<!-- ════════════ SIDEBAR ════════════ -->
+<aside id="sidebar">
 
-        <!-- Header + Brand -->
-        <div class="sb-header">
-            <div class="sb-brand">
-                <div class="sb-brand-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 3c2.8 3.2 8 6.2 8 11.2A8 8 0 1 1 4 14.2C4 9.2 9.2 6.2 12 3Z" fill="#bbf7d0"/>
-                    </svg>
-                </div>
-                <div>
-                    <h1>Cổng không gian xanh</h1>
-                    <p>HCMUNRE · Tra cứu bản đồ</p>
-                </div>
-            </div>
-
-            <!-- Campus Selector -->
-            <div class="sb-campus-wrap">
-                <span class="sb-campus-label">📍 Chọn cơ sở</span>
-                <select id="campus-select">
-                    <option value="">— Tất cả cơ sở —</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Layer Toggles -->
-        <div class="sb-section">
-            <div class="sb-section-title">Lớp hiển thị</div>
-            <div class="layer-grid" id="layer-grid">
-                <!-- generated by JS -->
-            </div>
-        </div>
-
-        <!-- Detail / Empty state -->
-        <div id="detail-panel">
-            <div id="detail-empty">
-                <span class="empty-icon">🗺️</span>
-                <p>Chọn một đối tượng trên bản đồ để xem thông tin chi tiết.</p>
-            </div>
-
-            <!-- Carousel (hidden by default) -->
-            <div id="carousel" style="display:none">
-                <div id="carousel-track"></div>
-                <button class="carousel-btn" id="btn-prev">‹</button>
-                <button class="carousel-btn" id="btn-next">›</button>
-                <div class="carousel-dots" id="carousel-dots"></div>
-            </div>
-
-            <!-- Info body (hidden by default) -->
-            <div id="detail-body" style="display:none">
-                <span id="detail-badge" class="detail-badge"></span>
-                <div id="detail-title"></div>
-                <ul class="detail-meta" id="detail-meta"></ul>
-                <button class="detail-close-btn" id="detail-close">✕ Đóng thông tin</button>
-            </div>
-        </div>
-
-        <!-- Footer auth -->
-        <div class="sb-footer">
-            {% if user.is_authenticated %}
-                {% if can_access_portal %}
-                <a class="sb-btn sb-btn-primary" href="{% url 'portal_home' %}">⚙️ Quản lý</a>
-                {% else %}
-                <a class="sb-btn sb-btn-outline" href="{% url 'dashboard' %}">👤 Tài khoản</a>
-                {% endif %}
-                <form action="{% url 'logout' %}" method="post" style="flex:1">
-                    {% csrf_token %}
-                    <button class="sb-btn sb-btn-outline" type="submit" style="width:100%">Đăng xuất</button>
-                </form>
-            {% else %}
-                <a class="sb-btn sb-btn-primary" href="{% url 'login' %}">🔑 Đăng nhập</a>
-                <a class="sb-btn sb-btn-outline" href="{% url 'register' %}">📝 Đăng ký</a>
-            {% endif %}
-        </div>
-    </aside>
-
-    <!-- ════════════ MAP ════════════ -->
-    <div id="map-wrap">
-        <button id="sidebar-toggle" onclick="toggleSidebar()">☰ Menu</button>
-        <div id="map"></div>
+  <!-- Header + Campus selector (luôn hiển thị) -->
+  <div class="sb-header">
+    <div class="sb-brand">
+      <div class="sb-brand-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M12 3c2.8 3.2 8 6.2 8 11.2A8 8 0 1 1 4 14.2C4 9.2 9.2 6.2 12 3Z" fill="#bbf7d0"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Cổng không gian xanh</h1>
+        <p>HCMUNRE · Tra cứu bản đồ</p>
+      </div>
     </div>
+    <div class="sb-campus-wrap">
+      <span class="sb-campus-label">📍 Chọn cơ sở</span>
+      <select id="campus-select">
+        <option value="">— Tất cả cơ sở —</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Layer chips (ẩn khi đang drill-down) -->
+  <div class="sb-section" id="layer-section">
+    <div class="sb-section-title">Lớp hiển thị</div>
+    <div class="layer-grid" id="layer-grid"></div>
+  </div>
+
+  <!-- ══ PANEL 1: Browse (empty / feature detail) ══ -->
+  <div id="browse-panel" class="drill-panel active">
+    <div id="detail-empty">
+      <span class="empty-icon">🗺️</span>
+      <p>Bấm vào <strong>tòa nhà</strong> để xem tầng và phòng.<br>
+         Bấm vào các đối tượng khác để xem thông tin.</p>
+    </div>
+    <div id="carousel">
+      <div id="carousel-track"></div>
+      <button class="carousel-btn prev" id="btn-prev">‹</button>
+      <button class="carousel-btn next" id="btn-next">›</button>
+      <div class="carousel-dots" id="carousel-dots"></div>
+    </div>
+    <div id="detail-body">
+      <span id="detail-badge" class="detail-badge"></span>
+      <div id="detail-title" class="detail-title"></div>
+      <ul class="detail-meta" id="detail-meta"></ul>
+      <button class="detail-close-btn" id="detail-close">✕ Đóng</button>
+    </div>
+  </div>
+
+  <!-- ══ PANEL 2: Building (ảnh + danh sách tầng) ══ -->
+  <div id="building-panel" class="drill-panel">
+    <div class="dp-header">
+      <div class="dp-nav">
+        <button class="dp-back" id="bp-back">← Bản đồ</button>
+        <button class="dp-reset" id="bp-reset" title="Về khuôn viên cơ sở">🏠</button>
+      </div>
+      <div class="dp-title" id="bp-title"></div>
+      <div class="dp-subtitle" id="bp-subtitle"></div>
+    </div>
+    <!-- Ảnh tòa nhà -->
+    <div class="bp-img" id="bp-img-wrap">
+      <div id="bp-track"></div>
+      <button class="carousel-btn prev" id="bp-prev">‹</button>
+      <button class="carousel-btn next" id="bp-next">›</button>
+      <div class="carousel-dots" id="bp-dots"></div>
+    </div>
+    <!-- Danh sách tầng (cuộn) -->
+    <div class="bp-scroll">
+      <div style="font-size:11px;font-weight:700;color:#5c7468;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">📐 Chọn tầng để xem phòng</div>
+      <div class="floor-chip-list" id="floor-list"></div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL 3: Floor (danh sách phòng) ══ -->
+  <div id="floor-panel" class="drill-panel">
+    <div class="dp-header">
+      <div class="dp-nav">
+        <button class="dp-back" id="fp-back">← Tầng khác</button>
+        <button class="dp-reset" id="fp-reset" title="Về khuôn viên cơ sở">🏠</button>
+      </div>
+      <div class="dp-title" id="fp-title"></div>
+      <div class="dp-subtitle" id="fp-subtitle"></div>
+    </div>
+    <div class="fp-scroll rp-list">
+      <div style="font-size:11px;font-weight:700;color:#5c7468;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">🚪 Danh sách phòng</div>
+      <div class="room-list" id="room-list"></div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL 4: Room detail ══ -->
+  <div id="room-detail-panel" class="drill-panel">
+    <div class="dp-header">
+      <div class="dp-nav">
+        <button class="dp-back" id="rdp-back">← Danh sách phòng</button>
+        <button class="dp-reset" id="rdp-reset" title="Về khuôn viên cơ sở">🏠</button>
+      </div>
+      <div class="dp-title" id="rdp-title"></div>
+      <div class="dp-subtitle" id="rdp-subtitle"></div>
+    </div>
+    <div class="rdp-scroll">
+      <div id="rdp-img-wrap">
+        <div id="rdp-track"></div>
+        <button class="carousel-btn prev" id="rdp-prev">‹</button>
+        <button class="carousel-btn next" id="rdp-next">›</button>
+        <div class="carousel-dots" id="rdp-dots"></div>
+      </div>
+      <ul class="detail-meta" id="rdp-meta"></ul>
+    </div>
+  </div>
+
+  <!-- Footer auth -->
+  <div class="sb-footer">
+    {% if user.is_authenticated %}
+      {% if can_access_portal %}
+      <a class="sb-btn sb-btn-primary" href="{% url 'portal_home' %}">⚙️ Quản lý</a>
+      {% else %}
+      <a class="sb-btn sb-btn-outline" href="{% url 'dashboard' %}">👤 Tài khoản</a>
+      {% endif %}
+      <form action="{% url 'logout' %}" method="post" style="flex:1">
+        {% csrf_token %}
+        <button class="sb-btn sb-btn-outline" type="submit" style="width:100%">Đăng xuất</button>
+      </form>
+    {% else %}
+      <a class="sb-btn sb-btn-primary" href="{% url 'login' %}">🔑 Đăng nhập</a>
+      <a class="sb-btn sb-btn-outline" href="{% url 'register' %}">📝 Đăng ký</a>
+    {% endif %}
+  </div>
+</aside>
+
+<!-- ════════════ MAP ════════════ -->
+<div id="map-wrap">
+  <button id="sidebar-toggle" onclick="toggleSidebar()">☰ Menu</button>
+  <div id="map"></div>
+</div>
 
 </div><!-- #app -->
 
@@ -430,489 +309,641 @@ html, body {
 'use strict';
 
 /* ═══════════════════════════════════════
-   SIDEBAR TOGGLE (mobile)
+   API ENDPOINTS
 ═══════════════════════════════════════ */
-function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('open');
-}
+var API_FLOORS = '{% url "public_floors" 0 %}'.replace('/0/', '/');
+var API_ROOMS  = '{% url "public_rooms"  0 %}'.replace('/0/', '/');
+
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
 
 /* ═══════════════════════════════════════
-   MAP INIT
+   MAP
 ═══════════════════════════════════════ */
 var map = L.map('map', { zoomControl: false }).setView([10.7936, 106.6661], 17);
 L.control.zoom({ position: 'topright' }).addTo(map);
 
-// ── Basemap 1: Đường phố (Esri) — maxNativeZoom 17 an toàn toàn cầu
 var streetLayer = L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-    {
-        maxZoom: 22,
-        maxNativeZoom: 17,   // Esri Street có tile ổn định đến z17 toàn Việt Nam
-        attribution: 'Tiles &copy; <a href="https://www.esri.com">Esri</a>'
-    }
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom: 22, maxNativeZoom: 17, attribution: 'Tiles &copy; Esri' }
 );
-
-// ── Basemap 2: Vệ tinh (Esri) — hình ảnh thực, maxNativeZoom 20 tại TP.HCM
 var satelliteLayer = L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    {
-        maxZoom: 22,
-        maxNativeZoom: 20,   // Esri Imagery có ảnh vệ tinh độ phân giải cao đến z20 tại đô thị
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, GeoEye, USGS'
-    }
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom: 22, maxNativeZoom: 20, attribution: 'Tiles &copy; Esri' }
 );
-
-// Mặc định hiển thị đường phố
 streetLayer.addTo(map);
 
-
-
-
 /* ═══════════════════════════════════════
-   RAW DATA
+   DATA
 ═══════════════════════════════════════ */
 var campusData   = JSON.parse('{{ campuses_geojson|escapejs }}');
 var buildingData = JSON.parse('{{ buildings_geojson|escapejs }}');
 var greenData    = JSON.parse('{{ greens_geojson|escapejs }}');
 var parkingData  = JSON.parse('{{ parkings_geojson|escapejs }}');
-var floorData    = JSON.parse('{{ floors_geojson|escapejs }}');
-var roomData     = JSON.parse('{{ rooms_geojson|escapejs }}');
 var treeData     = JSON.parse('{{ trees_geojson|escapejs }}');
+
+/* ═══════════════════════════════════════
+   STATE
+═══════════════════════════════════════ */
+var activeFloorLayer  = null;
+var activeRoomLayer   = null;
+var selBuildingId     = null;
+var selFloorId        = null;
+var selCampusPk       = null;
+var floorCache        = {};   // buildingId → GeoJSON
+var roomCache         = {};   // floorId → GeoJSON
+var currentFloorName  = '';
+var currentBuildingName = '';
+
+function clearFloorLayer() { if (activeFloorLayer) { map.removeLayer(activeFloorLayer); activeFloorLayer = null; } }
+function clearRoomLayer()  { if (activeRoomLayer)  { map.removeLayer(activeRoomLayer);  activeRoomLayer  = null; } }
+
+/* ═══════════════════════════════════════
+   PANEL STATE MACHINE
+   showPanel(name) — 'browse' | 'building' | 'floor' | 'room-detail'
+═══════════════════════════════════════ */
+var panels = ['browse-panel','building-panel','floor-panel','room-detail-panel'];
+
+function showPanel(name) {
+  panels.forEach(function(id) {
+    var el = document.getElementById(id);
+    el.classList.toggle('active', id === name);
+  });
+  // Ẩn layer-section khi drill-down vào building/floor/room
+  var inDrillDown = (name !== 'browse-panel');
+  document.getElementById('layer-section').style.display = inDrillDown ? 'none' : 'block';
+  document.getElementById('sidebar').classList.add('open');
+}
 
 /* ═══════════════════════════════════════
    CAMPUS SELECTOR
 ═══════════════════════════════════════ */
-var campusBoundsMap = {};   // { pk: L.LatLngBounds }
-var campusLayerRef  = null; // will be set after geoJSON creation
+var campusBoundsMap = {};
+var campusLayerRef  = null;
 
-var campusSelect = document.getElementById('campus-select');
-
-// Build options from GeoJSON after layer is created
 function buildCampusSelector(layer) {
-    campusLayerRef = layer;
-    layer.eachLayer(function(lyr) {
-        var f = lyr.feature;
-        var pk = f.id || f.properties.pk;
-        var name = f.properties.name;
-        var bounds;
-        try { bounds = lyr.getBounds(); } catch(e) { return; }
-        if (pk && name) {
-            campusBoundsMap[pk] = bounds;
-            var opt = document.createElement('option');
-            opt.value = pk;
-            opt.textContent = '🏫 ' + name;
-            campusSelect.appendChild(opt);
-        }
-    });
+  campusLayerRef = layer;
+  layer.eachLayer(function(lyr) {
+    var f  = lyr.feature;
+    var pk = f.id || f.properties.pk;
+    var nm = f.properties.name;
+    var bd; try { bd = lyr.getBounds(); } catch(e) { return; }
+    if (pk && nm) {
+      campusBoundsMap[pk] = bd;
+      var opt = document.createElement('option');
+      opt.value = pk; opt.textContent = '🏫 ' + nm;
+      document.getElementById('campus-select').appendChild(opt);
+    }
+  });
 }
 
-campusSelect.addEventListener('change', function() {
-    var pk = this.value;
-    if (!pk) {
-        // Fit all campuses
-        if (campusLayerRef && campusLayerRef.getBounds().isValid()) {
-            map.flyToBounds(campusLayerRef.getBounds(), { padding: [40, 40], maxZoom: 18, duration: 1.2 });
-        }
-    } else {
-        var bounds = campusBoundsMap[pk];
-        if (bounds && bounds.isValid()) {
-            map.flyToBounds(bounds, { padding: [60, 60], maxZoom: 19, duration: 1.2 });
-        }
-    }
-    closeDetail();
+document.getElementById('campus-select').addEventListener('change', function() {
+  var pk = this.value;
+  if (!pk) {
+    if (campusLayerRef && campusLayerRef.getBounds().isValid())
+      map.flyToBounds(campusLayerRef.getBounds(), { padding:[40,40], maxZoom:18, duration:1.2 });
+  } else {
+    var bd = campusBoundsMap[pk];
+    if (bd && bd.isValid()) map.flyToBounds(bd, { padding:[60,60], maxZoom:19, duration:1.2 });
+  }
+  goBrowse();
 });
 
 /* ═══════════════════════════════════════
-   CAROUSEL
+   RESET về cơ sở
 ═══════════════════════════════════════ */
-var carouselImgs = [];
-var carouselIdx  = 0;
-
-function mediaUrl(path) {
-    return (path && path !== '' && path !== 'null' && path !== 'None') ? '/media/' + path : null;
+function resetToCampus() {
+  var bounds = selCampusPk ? campusBoundsMap[selCampusPk] : null;
+  if (!bounds || !bounds.isValid())
+    bounds = campusLayerRef && campusLayerRef.getBounds().isValid() ? campusLayerRef.getBounds() : null;
+  goBrowse();
+  if (bounds) map.flyToBounds(bounds, { padding:[60,60], maxZoom:19, duration:1.2 });
 }
 
-function buildCarousel(rawImgs, fallbackIcon) {
-    var imgs = (rawImgs || []).map(mediaUrl).filter(Boolean);
-    carouselImgs = imgs;
-    carouselIdx  = 0;
-
-    var carousel = document.getElementById('carousel');
-    var track    = document.getElementById('carousel-track');
-    var dots     = document.getElementById('carousel-dots');
-    var btnPrev  = document.getElementById('btn-prev');
-    var btnNext  = document.getElementById('btn-next');
-
-    track.innerHTML = '';
-    dots.innerHTML  = '';
-
-    if (imgs.length === 0) {
-        // No image — show icon banner
-        track.innerHTML = '<div class="carousel-no-img" style="width:100%;height:140px">' + (fallbackIcon || '🗺️') + '</div>';
-        track.style.height = '140px';
-        carousel.style.display = 'block';
-        btnPrev.style.display = btnNext.style.display = 'none';
-        return;
-    }
-
-    track.style.height = '200px';
-    imgs.forEach(function(src, i) {
-        var img = document.createElement('img');
-        img.src = src; img.alt = 'Hình ' + (i + 1);
-        track.appendChild(img);
-
-        var dot = document.createElement('div');
-        dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
-        dot.addEventListener('click', function() { goSlide(i); });
-        dots.appendChild(dot);
-    });
-
-    if (imgs.length > 1) {
-        btnPrev.style.display = btnNext.style.display = 'flex';
-    } else {
-        btnPrev.style.display = btnNext.style.display = 'none';
-    }
-
-    carousel.style.display = 'block';
-    renderCarousel();
-}
-
-function renderCarousel() {
-    var track = document.getElementById('carousel-track');
-    var dotEls = document.getElementById('carousel-dots').querySelectorAll('.carousel-dot');
-    track.style.transform = 'translateX(' + (-carouselIdx * 320) + 'px)';
-    dotEls.forEach(function(d, i) {
-        d.classList.toggle('active', i === carouselIdx);
-    });
-}
-
-function goSlide(idx) {
-    carouselIdx = (idx + carouselImgs.length) % carouselImgs.length;
-    renderCarousel();
-}
-
-document.getElementById('btn-prev').addEventListener('click', function() { goSlide(carouselIdx - 1); });
-document.getElementById('btn-next').addEventListener('click', function() { goSlide(carouselIdx + 1); });
-
-// Touch / swipe support
-(function() {
-    var track = document.getElementById('carousel');
-    var startX = 0;
-    track.addEventListener('touchstart', function(e) { startX = e.touches[0].clientX; }, {passive:true});
-    track.addEventListener('touchend', function(e) {
-        var dx = e.changedTouches[0].clientX - startX;
-        if (Math.abs(dx) > 40) goSlide(carouselIdx + (dx < 0 ? 1 : -1));
-    }, {passive:true});
-})();
+['bp-reset','fp-reset','rdp-reset'].forEach(function(id) {
+  document.getElementById(id).addEventListener('click', resetToCampus);
+});
 
 /* ═══════════════════════════════════════
-   DETAIL PANEL
+   GO BROWSE (back to map)
 ═══════════════════════════════════════ */
-function showDetail(opts) {
-    // opts = { type, badgeClass, icon, title, images, meta: [[icon, label, value], ...] }
-    document.getElementById('detail-empty').style.display = 'none';
+function goBrowse() {
+  clearFloorLayer();
+  clearRoomLayer();
+  selBuildingId = null; selFloorId = null;
+  showPanel('browse-panel');
+  closeDetail();
+}
 
-    // Carousel
-    buildCarousel(opts.images, opts.icon);
+document.getElementById('bp-back').addEventListener('click', goBrowse);
 
-    // Badge + title
-    var badge = document.getElementById('detail-badge');
-    badge.className = 'detail-badge ' + opts.badgeClass;
-    badge.textContent = opts.type;
+/* ═══════════════════════════════════════
+   GENERIC DETAIL (campus, green, parking, tree)
+═══════════════════════════════════════ */
+var carImgs = [], carIdx = 0;
 
-    document.getElementById('detail-title').textContent = opts.title || '—';
+function mediaUrl(p) { return (p && p !== '' && p !== 'null' && p !== 'None') ? '/media/' + p : null; }
 
-    // Meta list
-    var ul = document.getElementById('detail-meta');
-    ul.innerHTML = '';
-    (opts.meta || []).forEach(function(m) {
-        // m = [icon, label, value]
-        if (!m[2] && m[2] !== 0) return;
-        var li = document.createElement('li');
-        li.innerHTML =
-            '<span class="meta-icon">' + m[0] + '</span>' +
-            '<div><div class="meta-label">' + m[1] + '</div>' +
-            '<div class="meta-value">' + m[2] + '</div></div>';
-        ul.appendChild(li);
+function buildCarousel(rawImgs, fallbackIcon) {
+  var imgs = (rawImgs||[]).map(mediaUrl).filter(Boolean);
+  carImgs = imgs; carIdx = 0;
+  var track = document.getElementById('carousel-track');
+  var dots  = document.getElementById('carousel-dots');
+  var car   = document.getElementById('carousel');
+  var btnP  = document.getElementById('btn-prev');
+  var btnN  = document.getElementById('btn-next');
+  track.innerHTML = ''; dots.innerHTML = '';
+  if (!imgs.length) {
+    track.style.height = '140px';
+    track.innerHTML = '<div class="carousel-no-img" style="width:100%;height:140px">' + (fallbackIcon||'🗺️') + '</div>';
+    btnP.style.display = btnN.style.display = 'none';
+  } else {
+    track.style.height = '200px';
+    imgs.forEach(function(src,i) {
+      var img = document.createElement('img'); img.src = src; img.alt = 'Ảnh '+(i+1);
+      track.appendChild(img);
+      var d = document.createElement('div'); d.className = 'carousel-dot'+(i===0?' active':'');
+      d.addEventListener('click', function(){ goSlide(i); });
+      dots.appendChild(d);
     });
+    if (imgs.length > 1) { btnP.style.display = btnN.style.display = 'flex'; }
+    else                 { btnP.style.display = btnN.style.display = 'none'; }
+  }
+  car.style.display = 'block'; renderCar();
+}
+function renderCar() {
+  document.getElementById('carousel-track').style.transform = 'translateX('+(-carIdx*320)+'px)';
+  document.getElementById('carousel-dots').querySelectorAll('.carousel-dot').forEach(function(d,i){ d.classList.toggle('active',i===carIdx); });
+}
+function goSlide(idx) { carIdx=(idx+carImgs.length)%carImgs.length; renderCar(); }
+document.getElementById('btn-prev').addEventListener('click', function(){ goSlide(carIdx-1); });
+document.getElementById('btn-next').addEventListener('click', function(){ goSlide(carIdx+1); });
 
-    document.getElementById('detail-body').style.display = 'block';
-
-    // On mobile, open sidebar
-    document.getElementById('sidebar').classList.add('open');
+function showDetail(opts) {
+  showPanel('browse-panel');
+  document.getElementById('detail-empty').style.display = 'none';
+  buildCarousel(opts.images, opts.icon);
+  var badge = document.getElementById('detail-badge');
+  badge.className = 'detail-badge ' + opts.badgeClass;
+  badge.textContent = opts.type;
+  document.getElementById('detail-title').textContent = opts.title || '—';
+  var ul = document.getElementById('detail-meta'); ul.innerHTML = '';
+  (opts.meta||[]).forEach(function(m) {
+    if (!m[2] && m[2] !== 0) return;
+    var li = document.createElement('li');
+    li.innerHTML = '<span class="meta-icon">'+m[0]+'</span><div><div class="meta-label">'+m[1]+'</div><div class="meta-value">'+m[2]+'</div></div>';
+    ul.appendChild(li);
+  });
+  document.getElementById('detail-body').style.display = 'block';
 }
 
 function closeDetail() {
-    document.getElementById('detail-empty').style.display = 'flex';
-    document.getElementById('carousel').style.display = 'none';
-    document.getElementById('detail-body').style.display = 'none';
+  document.getElementById('detail-empty').style.display = 'flex';
+  document.getElementById('carousel').style.display = 'none';
+  document.getElementById('detail-body').style.display = 'none';
 }
-
 document.getElementById('detail-close').addEventListener('click', closeDetail);
 
 /* ═══════════════════════════════════════
-   LAYER CHIPS
+   BUILDING PANEL
+═══════════════════════════════════════ */
+var bpImgs = [], bpIdx = 0;
+
+function buildBpCarousel(rawImgs) {
+  var imgs = (rawImgs||[]).map(mediaUrl).filter(Boolean);
+  bpImgs = imgs; bpIdx = 0;
+  var wrap  = document.getElementById('bp-img-wrap');
+  var track = document.getElementById('bp-track');
+  var dots  = document.getElementById('bp-dots');
+  var btnP  = document.getElementById('bp-prev');
+  var btnN  = document.getElementById('bp-next');
+  track.innerHTML = ''; dots.innerHTML = '';
+  if (!imgs.length) { wrap.style.display = 'none'; return; }
+  imgs.forEach(function(src,i) {
+    var img = document.createElement('img'); img.src = src; img.alt = 'Ảnh '+(i+1);
+    track.appendChild(img);
+    var d = document.createElement('div'); d.className = 'carousel-dot'+(i===0?' active':'');
+    d.addEventListener('click', function(){ bpGoSlide(i); }); dots.appendChild(d);
+  });
+  btnP.style.display = btnN.style.display = imgs.length > 1 ? 'flex' : 'none';
+  wrap.style.display = 'block';
+}
+function bpGoSlide(idx) {
+  bpIdx = (idx+bpImgs.length)%bpImgs.length;
+  document.getElementById('bp-track').style.transform = 'translateX('+(-bpIdx*320)+'px)';
+  document.getElementById('bp-dots').querySelectorAll('.carousel-dot').forEach(function(d,i){ d.classList.toggle('active',i===bpIdx); });
+}
+document.getElementById('bp-prev').addEventListener('click', function(){ bpGoSlide(bpIdx-1); });
+document.getElementById('bp-next').addEventListener('click', function(){ bpGoSlide(bpIdx+1); });
+
+function openBuildingPanel(bId, bName, campusPk, feat, imgs) {
+  selBuildingId = bId;
+  selCampusPk   = campusPk;
+  currentBuildingName = bName;
+  clearFloorLayer(); clearRoomLayer();
+
+  // Header
+  var campusOpt = document.querySelector('#campus-select option[value="'+campusPk+'"]');
+  var campusLabel = campusOpt ? campusOpt.textContent : ('Cơ sở');
+  document.getElementById('bp-title').textContent    = bName;
+  document.getElementById('bp-subtitle').textContent = campusLabel;
+
+  // Ảnh
+  buildBpCarousel(imgs || []);
+
+  // Load tầng
+  var fl = document.getElementById('floor-list');
+  fl.innerHTML = '<div class="loading-msg">Đang tải tầng…</div>';
+  showPanel('building-panel');
+
+  fetch(API_FLOORS + bId + '/')
+    .then(function(r){ return r.json(); })
+    .then(function(data){ renderFloorList(data, bId, bName, campusLabel); })
+    .catch(function(){ fl.innerHTML = '<div class="no-data-msg">Không tải được dữ liệu.</div>'; });
+}
+
+/* ═══════════════════════════════════════
+   FLOOR LIST
+═══════════════════════════════════════ */
+function renderFloorList(geojson, bId, bName, campusLabel) {
+  floorCache[bId] = geojson;
+  var feats = geojson.features || [];
+  var fl    = document.getElementById('floor-list');
+  fl.innerHTML = '';
+
+  if (!feats.length) {
+    fl.innerHTML = '<div class="no-data-msg">Tòa nhà chưa có tầng nào.</div>';
+    return;
+  }
+
+  // Hiện ranh giới tất cả tầng trên map (nhạt)
+  clearFloorLayer();
+  activeFloorLayer = L.geoJSON(geojson, {
+    style: { color:'#c2410c', weight:1.5, fillColor:'#fdba74', fillOpacity:0.12, dashArray:'5 4' }
+  }).addTo(map);
+  try { var b = activeFloorLayer.getBounds(); if (b&&b.isValid()) map.fitBounds(b,{padding:[40,40],maxZoom:19}); } catch(e){}
+
+  feats.forEach(function(f) {
+    var p    = f.properties;
+    var flId = f.id || p.pk;
+    var lvl  = (p.level !== null && p.level !== undefined) ? p.level : '?';
+    var nm   = p.name || ('Tầng ' + lvl);
+
+    var item = document.createElement('div');
+    item.className = 'floor-item';
+    item.dataset.floorId = flId;
+    item.innerHTML =
+      '<div class="floor-badge">'+lvl+'</div>' +
+      '<div class="floor-name">'+nm+'</div>' +
+      '<span class="floor-room-count" id="rc-'+flId+'">…</span>';
+
+    item.addEventListener('click', function(){ selectFloor(flId, nm, lvl, f, bName, campusLabel); });
+    fl.appendChild(item);
+
+    // Prefetch số phòng
+    fetch(API_ROOMS + flId + '/')
+      .then(function(r){ return r.json(); })
+      .then(function(rd){
+        var cnt = (rd.features||[]).length;
+        roomCache[flId] = rd;
+        var el = document.getElementById('rc-'+flId);
+        if (el) el.textContent = cnt ? cnt+' phòng' : 'Chưa có phòng';
+      }).catch(function(){
+        var el = document.getElementById('rc-'+flId);
+        if (el) el.textContent = '';
+      });
+  });
+}
+
+/* ═══════════════════════════════════════
+   FLOOR PANEL
+═══════════════════════════════════════ */
+document.getElementById('fp-back').addEventListener('click', function(){
+  clearRoomLayer();
+  selFloorId = null;
+  showPanel('building-panel');
+  // Khôi phục floor layer về tất cả tầng mờ
+  if (selBuildingId && floorCache[selBuildingId]) {
+    clearFloorLayer();
+    activeFloorLayer = L.geoJSON(floorCache[selBuildingId], {
+      style:{ color:'#c2410c', weight:1.5, fillColor:'#fdba74', fillOpacity:0.12, dashArray:'5 4' }
+    }).addTo(map);
+  }
+});
+
+function selectFloor(flId, flName, lvl, feat, bName, campusLabel) {
+  selFloorId = flId;
+  currentFloorName = flName;
+
+  // Header floor panel
+  document.getElementById('fp-title').textContent    = flName;
+  document.getElementById('fp-subtitle').textContent = '🏢 ' + bName + ' · ' + campusLabel;
+
+  // Highlight tầng được chọn trên map
+  var bldGeojson = floorCache[selBuildingId];
+  if (bldGeojson) {
+    clearFloorLayer();
+    activeFloorLayer = L.geoJSON(bldGeojson, {
+      style: function(f) {
+        var fid = f.id || f.properties.pk;
+        return String(fid) === String(flId)
+          ? { color:'#ea580c', weight:2.5, fillColor:'#fed7aa', fillOpacity:0.35 }
+          : { color:'#c2410c', weight:1, fillColor:'#fdba74', fillOpacity:0.08, dashArray:'5 4' };
+      }
+    }).addTo(map);
+    try {
+      activeFloorLayer.eachLayer(function(lyr){
+        var f2 = lyr.feature;
+        if (String(f2.id||f2.properties.pk) === String(flId)) {
+          var b = lyr.getBounds(); if (b&&b.isValid()) map.fitBounds(b,{padding:[40,40],maxZoom:20});
+        }
+      });
+    } catch(e){}
+  }
+
+  // Load phòng
+  var rl = document.getElementById('room-list');
+  rl.innerHTML = '<div class="loading-msg">Đang tải phòng…</div>';
+  clearRoomLayer();
+  showPanel('floor-panel');
+
+  var cached = roomCache[flId];
+  if (cached) { renderRoomList(cached, flId, flName, bName, campusLabel); return; }
+
+  fetch(API_ROOMS + flId + '/')
+    .then(function(r){ return r.json(); })
+    .then(function(data){ roomCache[flId] = data; renderRoomList(data, flId, flName, bName, campusLabel); })
+    .catch(function(){ rl.innerHTML = '<div class="no-data-msg">Không tải được dữ liệu.</div>'; });
+}
+
+/* ═══════════════════════════════════════
+   ROOM LIST
+═══════════════════════════════════════ */
+var ROOM_TYPES = { classroom:'📚 Phòng học', lab:'🔬 Thực hành / Lab', wc:'🚻 Nhà vệ sinh', office:'💼 Văn phòng' };
+
+function renderRoomList(geojson, flId, flName, bName, campusLabel) {
+  var feats = geojson.features || [];
+  var rl    = document.getElementById('room-list');
+  rl.innerHTML = '';
+
+  if (!feats.length) {
+    rl.innerHTML = '<div class="no-data-msg">Tầng này chưa có phòng nào.</div>';
+    clearRoomLayer(); return;
+  }
+
+  // Vẽ phòng lên map
+  clearRoomLayer();
+  activeRoomLayer = L.geoJSON(geojson, {
+    pointToLayer: function(f, latlng) {
+      return L.circleMarker(latlng, { radius:7, color:'#9d174d', fillColor:'#f9a8d4', fillOpacity:0.92, weight:1.5 });
+    },
+    onEachFeature: function(f, lyr) {
+      var p   = f.properties;
+      var fid = f.id || p.pk;
+      lyr.bindTooltip('<b>'+(p.name||'')+'</b><br><small>'+(ROOM_TYPES[p.room_type]||p.room_type||'')+'</small>',
+        { permanent:false, direction:'top' });
+      lyr.on('click', function(e) {
+        L.DomEvent.stopPropagation(e);
+        highlightRoomItem(fid);
+        openRoomDetail(p, flName, bName, campusLabel);
+      });
+    }
+  }).addTo(map);
+
+  // Sidebar list
+  feats.forEach(function(f) {
+    var p   = f.properties;
+    var fid = f.id || p.pk;
+    var item = document.createElement('div');
+    item.className = 'room-item';
+    item.dataset.roomId = fid;
+    item.innerHTML =
+      '<div class="room-dot"></div>' +
+      '<div><div class="room-title">'+(p.name||'Phòng')+'</div>' +
+      '<div class="room-type-label">'+(ROOM_TYPES[p.room_type]||p.room_type||'')+'</div></div>';
+
+    item.addEventListener('click', function() {
+      highlightRoomItem(fid);
+      // Pan đến phòng trên map
+      if (activeRoomLayer) {
+        activeRoomLayer.eachLayer(function(lyr) {
+          if ((lyr.feature.id||lyr.feature.properties.pk) == fid) {
+            try { map.panTo(lyr.getLatLng(), {animate:true}); } catch(e){}
+            lyr.openTooltip();
+          }
+        });
+      }
+      openRoomDetail(p, flName, bName, campusLabel);
+    });
+    rl.appendChild(item);
+  });
+}
+
+function highlightRoomItem(fid) {
+  document.querySelectorAll('.room-item').forEach(function(el){
+    el.classList.toggle('active', el.dataset.roomId == fid);
+  });
+}
+
+/* ═══════════════════════════════════════
+   ROOM DETAIL PANEL
+═══════════════════════════════════════ */
+var rdpImgs = [], rdpIdx = 0;
+
+document.getElementById('rdp-back').addEventListener('click', function(){
+  showPanel('floor-panel');
+  // Room markers tetain trên map
+});
+
+function openRoomDetail(p, flName, bName, campusLabel) {
+  document.getElementById('rdp-title').textContent    = p.name || 'Phòng';
+  document.getElementById('rdp-subtitle').textContent = '📐 ' + flName + ' · 🏢 ' + bName;
+
+  // Ảnh phòng
+  var imgs = [p.image_1, p.image_2, p.image_3].map(mediaUrl).filter(Boolean);
+  rdpImgs = imgs; rdpIdx = 0;
+  var wrap  = document.getElementById('rdp-img-wrap');
+  var track = document.getElementById('rdp-track');
+  var dots  = document.getElementById('rdp-dots');
+  var btnP  = document.getElementById('rdp-prev');
+  var btnN  = document.getElementById('rdp-next');
+  track.innerHTML = ''; dots.innerHTML = '';
+  if (imgs.length) {
+    imgs.forEach(function(src,i){
+      var img = document.createElement('img'); img.src=src; img.alt='Ảnh '+(i+1);
+      track.appendChild(img);
+      var d = document.createElement('div'); d.className='carousel-dot'+(i===0?' active':'');
+      d.addEventListener('click', function(){ rdpGoSlide(i); }); dots.appendChild(d);
+    });
+    btnP.style.display = btnN.style.display = imgs.length > 1 ? 'flex' : 'none';
+    wrap.style.display = 'block';
+  } else {
+    wrap.style.display = 'none';
+  }
+
+  // Meta
+  var ul = document.getElementById('rdp-meta'); ul.innerHTML = '';
+  var meta = [
+    ['🏷️', 'Loại phòng', ROOM_TYPES[p.room_type] || p.room_type],
+    ['📐', 'Tầng',       flName],
+    ['🏢', 'Tòa nhà',    bName],
+  ];
+  meta.forEach(function(m){
+    if (!m[2]) return;
+    var li = document.createElement('li');
+    li.innerHTML = '<span class="meta-icon">'+m[0]+'</span><div><div class="meta-label">'+m[1]+'</div><div class="meta-value">'+m[2]+'</div></div>';
+    ul.appendChild(li);
+  });
+
+  showPanel('room-detail-panel');
+}
+
+function rdpGoSlide(idx) {
+  rdpIdx = (idx+rdpImgs.length)%rdpImgs.length;
+  document.getElementById('rdp-track').style.transform = 'translateX('+(-rdpIdx*288)+'px)';
+  document.getElementById('rdp-dots').querySelectorAll('.carousel-dot').forEach(function(d,i){ d.classList.toggle('active',i===rdpIdx); });
+}
+document.getElementById('rdp-prev').addEventListener('click', function(){ rdpGoSlide(rdpIdx-1); });
+document.getElementById('rdp-next').addEventListener('click', function(){ rdpGoSlide(rdpIdx+1); });
+
+/* ═══════════════════════════════════════
+   LAYER CHIPS (5 base layers — không gồm Tầng & Phòng)
+   Fix: khi re-add campus → bringToBack để building luôn clickable
 ═══════════════════════════════════════ */
 var layerDefs = [
-    { key: 'campus',   label: 'Khuôn viên', color: '#16a34a', icon: '🏫' },
-    { key: 'building', label: 'Tòa nhà',    color: '#fbbf24', icon: '🏢' },
-    { key: 'green',    label: 'Mảng xanh',  color: '#4ade80', icon: '🌿' },
-    { key: 'parking',  label: 'Bãi xe',     color: '#93c5fd', icon: '🅿️' },
-    { key: 'floor',    label: 'Tầng',       color: '#fb923c', icon: '📐' },
-    { key: 'room',     label: 'Phòng',      color: '#f9a8d4', icon: '🚪' },
-    { key: 'tree',     label: 'Cây xanh',   color: '#22c55e', icon: '🌳' },
+  { key:'campus',   label:'Khuôn viên', color:'#16a34a', icon:'🏫' },
+  { key:'building', label:'Tòa nhà',    color:'#fbbf24', icon:'🏢' },
+  { key:'green',    label:'Mảng xanh',  color:'#4ade80', icon:'🌿' },
+  { key:'parking',  label:'Bãi xe',     color:'#93c5fd', icon:'P'  },
+  { key:'tree',     label:'Cây xanh',   color:'#22c55e', icon:'🌳' },
 ];
-
-var layerMap  = {};   // { key: L.GeoJSON }
+var layerMap  = {};
 var layerGrid = document.getElementById('layer-grid');
 
 layerDefs.forEach(function(def) {
-    var chip = document.createElement('label');
-    chip.className = 'layer-chip active';
-    chip.dataset.key = def.key;
-    chip.innerHTML =
-        '<input type="checkbox" checked>' +
-        '<span class="chip-dot" style="background:' + def.color + '"></span>' +
-        def.icon + ' ' + def.label;
+  var chip = document.createElement('label');
+  chip.className = 'layer-chip active';
+  chip.dataset.key = def.key;
+  chip.innerHTML =
+    '<input type="checkbox" checked>' +
+    '<span class="chip-dot" style="background:'+def.color+'"></span>' +
+    def.icon + ' ' + def.label;
 
-    chip.addEventListener('click', function(e) {
-        e.preventDefault();
-        var cb = chip.querySelector('input');
-        cb.checked = !cb.checked;
-        chip.classList.toggle('active', cb.checked);
-        var lyr = layerMap[def.key];
-        if (!lyr) return;
-        if (cb.checked) { map.addLayer(lyr); }
-        else            { map.removeLayer(lyr); }
-    });
+  chip.addEventListener('click', function(e) {
+    e.preventDefault();
+    var cb = chip.querySelector('input');
+    cb.checked = !cb.checked;
+    chip.classList.toggle('active', cb.checked);
+    var lyr = layerMap[def.key];
+    if (!lyr) return;
+    if (cb.checked) {
+      map.addLayer(lyr);
+      // campus phải ở dưới building để building vẫn clickable
+      if (def.key === 'campus') lyr.bringToBack();
+    } else {
+      map.removeLayer(lyr);
+    }
+  });
 
-    layerGrid.appendChild(chip);
+  layerGrid.appendChild(chip);
 });
 
 function registerLayer(key, lyr) { layerMap[key] = lyr; }
 
 /* ═══════════════════════════════════════
-   CLICK HANDLER FACTORY
+   GEOJSON BASE LAYERS
 ═══════════════════════════════════════ */
-function onFeatureClick(opts) {
-    return function(e) {
-        L.DomEvent.stopPropagation(e);
-        // Pan map slightly left so sidebar doesn't cover feature
-        showDetail(opts);
-        var lyr = e.target;
-        try {
-            var center = lyr.getCenter ? lyr.getCenter() : lyr.getLatLng();
-            map.panTo(center, { animate: true });
-        } catch(err) {}
-    };
-}
+var HEALTH = { good:'✅ Phát triển tốt', needs_care:'⚠️ Cần chăm sóc' };
 
-/* ═══════════════════════════════════════
-   ROOM TYPE & HEALTH LABELS
-═══════════════════════════════════════ */
-var ROOM_TYPES = {
-    classroom: '📚 Phòng học',
-    lab:       '🔬 Thực hành / Lab',
-    wc:        '🚻 Nhà vệ sinh',
-    office:    '💼 Văn phòng'
-};
-var HEALTH = {
-    good:       '✅ Phát triển tốt',
-    needs_care: '⚠️ Cần chăm sóc'
-};
-
-/* ═══════════════════════════════════════
-   GEOJSON LAYERS
-═══════════════════════════════════════ */
-
-// ── Khuôn viên
+// Campus (addTo map first → sẽ ở dưới cùng về z-order)
 var campuses = L.geoJSON(campusData, {
-    style: { color: '#0b3d2e', weight: 2.5, fillColor: '#16a34a', fillOpacity: 0.08 },
-    onEachFeature: function(f, lyr) {
-        var p = f.properties;
-        lyr.on('click', onFeatureClick({
-            type: 'Khuôn viên', badgeClass: 'badge-campus', icon: '🏫',
-            title: p.name,
-            images: [p.image_1, p.image_2, p.image_3],
-            meta: []
-        }));
-    }
+  style: { color:'#0b3d2e', weight:2.5, fillColor:'#16a34a', fillOpacity:0.08 },
+  onEachFeature: function(f, lyr) {
+    var p = f.properties;
+    lyr.on('click', function(e) {
+      L.DomEvent.stopPropagation(e);
+      goBrowse();
+      showDetail({ type:'Khuôn viên', badgeClass:'badge-campus', icon:'🏫', title:p.name, images:[p.image_1,p.image_2,p.image_3], meta:[] });
+    });
+  }
 }).addTo(map);
 buildCampusSelector(campuses);
 registerLayer('campus', campuses);
 
-// ── Tòa nhà
+// Buildings
 var buildings = L.geoJSON(buildingData, {
-    style: { color: '#92400e', weight: 1.5, fillColor: '#fbbf24', fillOpacity: 0.35 },
-    onEachFeature: function(f, lyr) {
-        var p = f.properties;
-        lyr.on('click', onFeatureClick({
-            type: 'Tòa nhà', badgeClass: 'badge-building', icon: '🏢',
-            title: p.name,
-            images: [p.image_1, p.image_2, p.image_3],
-            meta: [
-                ['🏫', 'Thuộc cơ sở', p.campus]
-            ]
-        }));
-    }
+  style: { color:'#92400e', weight:1.5, fillColor:'#fbbf24', fillOpacity:0.35 },
+  onEachFeature: function(f, lyr) {
+    var p   = f.properties;
+    var bId = f.id || p.pk;
+    lyr.bindTooltip('<b>'+(p.name||'')+'</b>', { sticky:true, direction:'top' });
+    lyr.on('click', function(e) {
+      L.DomEvent.stopPropagation(e);
+      openBuildingPanel(bId, p.name, p.campus, f, [p.image_1, p.image_2, p.image_3]);
+    });
+  }
 }).addTo(map);
 registerLayer('building', buildings);
 
-// ── Mảng xanh
+// Green areas
 var greens = L.geoJSON(greenData, {
-    style: { color: '#15803d', weight: 1.5, fillColor: '#4ade80', fillOpacity: 0.5 },
-    onEachFeature: function(f, lyr) {
-        var p = f.properties;
-        var typeLabel = p.type === 'grass' ? '🌿 Thảm cỏ' : '🌸 Vườn hoa / Cây cảnh';
-        lyr.on('click', onFeatureClick({
-            type: 'Mảng xanh', badgeClass: 'badge-green', icon: '🌿',
-            title: p.name,
-            images: [p.image_1, p.image_2, p.image_3],
-            meta: [
-                ['🌱', 'Loại mảng xanh', typeLabel],
-                ['🏫', 'Thuộc cơ sở', p.campus]
-            ]
-        }));
-    }
+  style: { color:'#15803d', weight:1.5, fillColor:'#4ade80', fillOpacity:0.5 },
+  onEachFeature: function(f, lyr) {
+    var p = f.properties;
+    var typeLabel = p.type === 'grass' ? '🌿 Thảm cỏ' : '🌸 Vườn hoa / Cây cảnh';
+    lyr.on('click', function(e) {
+      L.DomEvent.stopPropagation(e);
+      goBrowse();
+      showDetail({ type:'Mảng xanh', badgeClass:'badge-green', icon:'🌿', title:p.name, images:[p.image_1,p.image_2,p.image_3], meta:[['🌱','Loại mảng xanh',typeLabel],['🏫','Thuộc cơ sở',p.campus]] });
+    });
+  }
 }).addTo(map);
 registerLayer('green', greens);
 
-// ── Bãi xe
+// Parking
 var parkings = L.geoJSON(parkingData, {
-    style: { color: '#1e3a8a', weight: 1.5, fillColor: '#93c5fd', fillOpacity: 0.45 },
-    onEachFeature: function(f, lyr) {
-        var p = f.properties;
-        lyr.on('click', onFeatureClick({
-            type: 'Bãi xe', badgeClass: 'badge-parking', icon: '🅿️',
-            title: p.name,
-            images: [p.image_1, p.image_2, p.image_3],
-            meta: [
-                ['🔢', 'Sức chứa', p.capacity ? p.capacity + ' xe' : 'Chưa cập nhật'],
-                ['🏫', 'Thuộc cơ sở', p.campus]
-            ]
-        }));
-    }
+  style: { color:'#1e3a8a', weight:1.5, fillColor:'#93c5fd', fillOpacity:0.45 },
+  onEachFeature: function(f, lyr) {
+    var p = f.properties;
+    lyr.on('click', function(e) {
+      L.DomEvent.stopPropagation(e);
+      goBrowse();
+      showDetail({ type:'Bãi xe', badgeClass:'badge-parking', icon:'🅿️', title:p.name, images:[p.image_1,p.image_2,p.image_3], meta:[['🔢','Sức chứa',p.capacity?p.capacity+' xe':'Chưa cập nhật'],['🏫','Thuộc cơ sở',p.campus]] });
+    });
+  }
 }).addTo(map);
 registerLayer('parking', parkings);
 
-// ── Tầng
-var floors = L.geoJSON(floorData, {
-    style: { color: '#c2410c', weight: 1, fillOpacity: 0.06, dashArray: '4 3' },
-    onEachFeature: function(f, lyr) {
-        var p = f.properties;
-        var bpLink = p.blueprint_url
-            ? '<a href="' + p.blueprint_url + '" target="_blank" style="color:#1f7a4d">Xem bản vẽ ↗</a>'
-            : 'Chưa có';
-        lyr.on('click', onFeatureClick({
-            type: 'Tầng', badgeClass: 'badge-floor', icon: '📐',
-            title: p.name,
-            images: [],
-            meta: [
-                ['🏢', 'Thuộc tòa nhà', p.building],
-                ['🔢', 'Cấp tầng', p.level !== undefined && p.level !== null ? 'Tầng ' + p.level : null],
-                ['📄', 'Bản vẽ', bpLink]
-            ]
-        }));
-    }
-});
-registerLayer('floor', floors);
-
-// ── Phòng
-var rooms = L.geoJSON(roomData, {
-    pointToLayer: function(f, latlng) {
-        return L.circleMarker(latlng, {
-            radius: 7, color: '#9d174d', fillColor: '#f9a8d4', fillOpacity: 0.92, weight: 1.5
-        });
-    },
-    onEachFeature: function(f, lyr) {
-        var p = f.properties;
-        lyr.on('click', onFeatureClick({
-            type: 'Phòng', badgeClass: 'badge-room', icon: '🚪',
-            title: p.name,
-            images: [p.image_1, p.image_2, p.image_3],
-            meta: [
-                ['🏷️', 'Loại phòng', ROOM_TYPES[p.room_type] || p.room_type],
-                ['📐', 'Thuộc tầng', p.floor]
-            ]
-        }));
-    }
-});
-registerLayer('room', rooms);
-
-// ── Cây xanh
+// Trees
 var trees = L.geoJSON(treeData, {
-    pointToLayer: function(f, latlng) {
-        var ok = f.properties.health_status === 'good';
-        return L.circleMarker(latlng, {
-            radius: 8,
-            color: ok ? '#14532d' : '#b45309',
-            fillColor: ok ? '#22c55e' : '#fbbf24',
-            fillOpacity: 0.95, weight: 1.5
-        });
-    },
-    onEachFeature: function(f, lyr) {
-        var p = f.properties;
-        lyr.on('click', onFeatureClick({
-            type: 'Cây xanh', badgeClass: 'badge-tree', icon: '🌳',
-            title: p.species || 'Cây xanh',
-            images: [p.image_1, p.image_2, p.image_3],
-            meta: [
-                ['💚', 'Tình trạng', HEALTH[p.health_status] || p.health_status],
-                ['🏫', 'Thuộc cơ sở', p.campus]
-            ]
-        }));
-    }
+  pointToLayer: function(f, latlng) {
+    var ok = f.properties.health_status === 'good';
+    return L.circleMarker(latlng, { radius:8, color:ok?'#14532d':'#b45309', fillColor:ok?'#22c55e':'#fbbf24', fillOpacity:0.95, weight:1.5 });
+  },
+  onEachFeature: function(f, lyr) {
+    var p = f.properties;
+    lyr.on('click', function(e) {
+      L.DomEvent.stopPropagation(e);
+      goBrowse();
+      showDetail({ type:'Cây xanh', badgeClass:'badge-tree', icon:'🌳', title:p.species||'Cây xanh', images:[p.image_1,p.image_2,p.image_3], meta:[['💚','Tình trạng',HEALTH[p.health_status]||p.health_status],['🏫','Thuộc cơ sở',p.campus]] });
+    });
+  }
 }).addTo(map);
 registerLayer('tree', trees);
 
-/* ═══════════════════════════════════════
-   LAYER CONTROL (top-right)
-═══════════════════════════════════════ */
-L.control.layers(
-    // Basemaps (radio buttons)
-    {
-        '🗺️ Đường phố': streetLayer,
-        '🛰️ Vệ tinh':   satelliteLayer
-    },
-    // Overlays (checkboxes)
-    {
-        '🏫 Khuôn viên': campuses,
-        '🏢 Tòa nhà':    buildings,
-        '🌿 Mảng xanh':  greens,
-        '🅿️ Bãi xe':    parkings,
-        '📐 Tầng':       floors,
-        '🚪 Phòng':      rooms,
-        '🌳 Cây xanh':   trees
-    },
-    { collapsed: true, position: 'topright' }
-).addTo(map);
+// Campus ở dưới cùng (z-order)
+campuses.bringToBack();
 
-// Sync layer-control changes with sidebar chips
-map.on('overlayadd overlayremove', function(e) {
-    var labelMap = {
-        '🏫 Khuôn viên': 'campus', '🏢 Tòa nhà': 'building',
-        '🌿 Mảng xanh': 'green',  '🅿️ Bãi xe': 'parking',
-        '📐 Tầng': 'floor',       '🚪 Phòng': 'room',
-        '🌳 Cây xanh': 'tree'
-    };
-    var key = labelMap[e.name];
-    if (!key) return;
-    var chip = layerGrid.querySelector('[data-key="' + key + '"]');
-    if (!chip) return;
-    var active = e.type === 'overlayadd';
-    chip.classList.toggle('active', active);
-    chip.querySelector('input').checked = active;
+/* Basemap control */
+L.control.layers({ '🗺️ Đường phố':streetLayer, '🛰️ Vệ tinh':satelliteLayer }, {}, { collapsed:true, position:'topright' }).addTo(map);
+
+/* Fit initial */
+if (campuses.getBounds().isValid()) map.fitBounds(campuses.getBounds(), { padding:[40,40], maxZoom:18 });
+
+/* Click map trống → đóng browse detail (KHÔNG đóng building/floor/room panel) */
+map.on('click', function() {
+  var browse = document.getElementById('browse-panel');
+  if (browse.classList.contains('active')) closeDetail();
 });
-
-/* ═══════════════════════════════════════
-   INITIAL FIT
-═══════════════════════════════════════ */
-if (campuses.getBounds().isValid()) {
-    map.fitBounds(campuses.getBounds(), { padding: [40, 40], maxZoom: 18 });
-}
-
-// Close detail when clicking blank map
-map.on('click', function() { closeDetail(); });
 </script>
 </body>
 </html>
