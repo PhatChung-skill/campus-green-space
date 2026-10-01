@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
 <style>
+/* ── Error banner ── */
 .form-errors-banner {
     background: #fef2f2;
     border: 1.5px solid #fca5a5;
@@ -16,30 +17,48 @@
     font-size: 13px;
     color: #b91c1c;
     font-weight: 600;
+    display: none;          /* ẩn mặc định, JS sẽ show */
 }
 .form-errors-banner p { margin: 0; }
+.form-errors-banner.visible { display: block; }
+
+/* ── Field error inline ── */
+.field-error-msg {
+    color: #b91c1c;
+    font-size: 12px;
+    margin-top: 4px;
+    display: block;
+}
+
+/* ── Submit button feedback ── */
+#form-submit-btn[data-loading] {
+    opacity: .6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<form method="post" class="form-card split-form" enctype="multipart/form-data">
+<form id="entity-form" method="post" class="form-card split-form" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
     <div class="form-pane">
 
-        {# ── Lỗi chung (unique_together, v.v.) — đặt TRONG form-pane để không phá layout ── #}
-        {% if form.non_field_errors %}
-        <div class="form-errors-banner">
+        {# Banner lỗi chung (non_field_errors từ server lúc page load lần đầu, hoặc do JS) #}
+        <div class="form-errors-banner{% if form.non_field_errors %} visible{% endif %}" id="form-errors-banner">
             {% for err in form.non_field_errors %}<p>⚠️ {{ err }}</p>{% endfor %}
         </div>
-        {% endif %}
 
         <div class="form-grid">
             {% for field in form %}
                 {% if field.name != "geom_geojson" and field.name not in cfg.media_fields %}
-                <div class="field">
+                <div class="field" id="field-wrap-{{ field.html_name }}">
                     <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                     {{ field }}
-                    {{ field.errors }}
+                    {# Lỗi ban đầu từ server (page load) — JS sẽ thay thế khi AJAX #}
+                    {% for err in field.errors %}
+                    <span class="field-error-msg server-err">{{ err }}</span>
+                    {% endfor %}
                 </div>
                 {% endif %}
             {% endfor %}
@@ -51,7 +70,7 @@
             <div class="form-grid">
                 {% for field in form %}
                     {% if field.name in cfg.media_fields %}
-                    <div class="field">
+                    <div class="field" id="field-wrap-{{ field.html_name }}">
                         <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                         {% if not is_create %}
                             {% with current_img=field.value %}
@@ -65,7 +84,9 @@
                             {% endwith %}
                         {% endif %}
                         {{ field }}
-                        {{ field.errors }}
+                        {% for err in field.errors %}
+                        <span class="field-error-msg server-err">{{ err }}</span>
+                        {% endfor %}
                     </div>
                     {% endif %}
                 {% endfor %}
@@ -75,14 +96,14 @@
 
         <div class="actions form-actions">
             <a class="btn btn-line" href="{% url 'portal_entity_list' entity %}">Hủy</a>
-            <button class="btn btn-primary" type="submit">Lưu</button>
+            <button class="btn btn-primary" type="submit" id="form-submit-btn">Lưu</button>
         </div>
     </div>
     <div class="map-pane">
         <label>Hình học trên bản đồ</label>
         <p class="map-help">
             {% if cfg.geom_type == "point" %}
-            Bấm vào bản đồ để chọn vị trí. Có thể kéo điểm để chỉnh lại.
+            Bấm vào bản đồ để chọn vị trí, hoặc nhập kinh độ / vĩ độ vào ô bên dưới. Có thể kéo điểm để chỉnh lại.
             {% else %}
             Dùng biểu tượng đa giác hoặc hình chữ nhật góc trên bên trái bản đồ để vẽ ranh giới, rồi chỉnh đỉnh nếu cần.
             {% endif %}
@@ -90,6 +111,39 @@
             Chọn đối tượng cha trên form để hiện ranh giới gợi ý (nét đứt xanh nhạt).
             {% endif %}
         </p>
+
+        {# ── Nhập tọa độ (chỉ hiển thị cho entity dạng point) ── #}
+        {% if cfg.geom_type == "point" %}
+        <div id="coord-inputs" style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:140px;">
+                <label for="id_lat" style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">
+                    📍 Vĩ độ (Latitude)
+                </label>
+                <input type="number" id="id_lat" name="lat_input"
+                       placeholder="VD: 10.7936"
+                       step="any" min="0"
+                       style="width:100%;padding:8px 10px;border:1.5px solid var(--line,#e2e8f0);border-radius:10px;font:inherit;font-size:13px;transition:border-color .15s;"
+                       oninput="syncFromCoords()">
+                <span id="lat-error" style="color:#b91c1c;font-size:12px;display:none;margin-top:3px">
+                    ⚠️ Vĩ độ không được âm
+                </span>
+            </div>
+            <div style="flex:1;min-width:140px;">
+                <label for="id_lng" style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">
+                    📍 Kinh độ (Longitude)
+                </label>
+                <input type="number" id="id_lng" name="lng_input"
+                       placeholder="VD: 106.6661"
+                       step="any" min="0"
+                       style="width:100%;padding:8px 10px;border:1.5px solid var(--line,#e2e8f0);border-radius:10px;font:inherit;font-size:13px;transition:border-color .15s;"
+                       oninput="syncFromCoords()">
+                <span id="lng-error" style="color:#b91c1c;font-size:12px;display:none;margin-top:3px">
+                    ⚠️ Kinh độ không được âm
+                </span>
+            </div>
+        </div>
+        {% endif %}
+
         {{ form.geom_geojson }}
         {{ form.geom_geojson.errors }}
         <div
@@ -108,7 +162,209 @@
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-<script src="{% static 'map_app/js/geom-editor.js' %}?v=5"></script>
+<script src="{% static 'map_app/js/geom-editor.js' %}?v=6"></script>
+
+{% if cfg.geom_type == "point" %}
+{# ── Sync hai chiều kinh độ / vĩ độ ↔ map ── #}
+<script>
+/* ─────────────────────────────────────────────
+   Các hàm này được gọi từ:
+   - HTML oninput: syncFromCoords() khi người dùng nhập lat/lng
+   - geom-editor.js v6: window.updateCoordsFromMap(lat, lng) khi click / drag map
+───────────────────────────────────────────── */
+var _geomHidden = document.getElementById('id_geom_geojson');
+
+/* Người dùng nhập lat/lng → kiểm tra âm → cập nhật geom_geojson + pan map */
+function syncFromCoords() {
+    var latEl = document.getElementById('id_lat');
+    var lngEl = document.getElementById('id_lng');
+    if (!latEl || !lngEl) return;
+
+    var latVal = parseFloat(latEl.value);
+    var lngVal = parseFloat(lngEl.value);
+
+    var latErr = document.getElementById('lat-error');
+    var lngErr = document.getElementById('lng-error');
+
+    var hasErr = false;
+
+    // Kiểm tra âm
+    if (latEl.value !== '' && latVal < 0) {
+        latErr.style.display = 'block';
+        latEl.style.borderColor = '#fca5a5';
+        hasErr = true;
+    } else {
+        latErr.style.display = 'none';
+        latEl.style.borderColor = '';
+    }
+
+    if (lngEl.value !== '' && lngVal < 0) {
+        lngErr.style.display = 'block';
+        lngEl.style.borderColor = '#fca5a5';
+        hasErr = true;
+    } else {
+        lngErr.style.display = 'none';
+        lngEl.style.borderColor = '';
+    }
+
+    if (hasErr) return;
+    if (isNaN(latVal) || isNaN(lngVal)) return;
+    if (latEl.value === '' || lngEl.value === '') return;
+
+    // Cập nhật geom_geojson
+    if (_geomHidden) {
+        _geomHidden.value = JSON.stringify({
+            type: 'Point',
+            coordinates: [lngVal, latVal]   // GeoJSON = [lng, lat]
+        });
+    }
+
+    // Notify geom-editor để cập nhật marker trên map
+    if (typeof window._geomEditorSetPoint === 'function') {
+        window._geomEditorSetPoint(latVal, lngVal);
+    }
+}
+
+/* geom-editor.js v6 gọi hàm này khi click / drag điểm trên map */
+window.updateCoordsFromMap = function (lat, lng) {
+    var latEl = document.getElementById('id_lat');
+    var lngEl = document.getElementById('id_lng');
+    if (latEl) latEl.value = lat.toFixed(7);
+    if (lngEl) lngEl.value = lng.toFixed(7);
+    // Ẩn lỗi nếu có
+    var latErr = document.getElementById('lat-error');
+    var lngErr = document.getElementById('lng-error');
+    if (latErr) { latErr.style.display = 'none'; latEl.style.borderColor = ''; }
+    if (lngErr) { lngErr.style.display = 'none'; lngEl.style.borderColor = ''; }
+};
+
+/* Khởi tạo: nếu đang edit và geom_geojson đã có giá trị → điền sẵn lat/lng */
+setTimeout(function () {
+    if (!_geomHidden || !_geomHidden.value) return;
+    try {
+        var geo = JSON.parse(_geomHidden.value);
+        if (geo.type === 'Point' && geo.coordinates) {
+            var lng = geo.coordinates[0];
+            var lat = geo.coordinates[1];
+            var latEl = document.getElementById('id_lat');
+            var lngEl = document.getElementById('id_lng');
+            if (latEl) latEl.value = lat.toFixed(7);
+            if (lngEl) lngEl.value = lng.toFixed(7);
+        }
+    } catch (e) {}
+}, 350);   // sau setTimeout của geom-editor (200ms) + buffer
+</script>
+{% endif %}
+
+{# ── AJAX Form Submit — hiện lỗi inline không reload trang ── #}
+<script>
+(function () {
+    var form       = document.getElementById('entity-form');
+    var banner     = document.getElementById('form-errors-banner');
+    var submitBtn  = document.getElementById('form-submit-btn');
+    var listUrl    = '{% url "portal_entity_list" entity %}';
+
+    if (!form) return;
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        // Xoá lỗi cũ
+        clearErrors();
+
+        // Đánh dấu đang gửi
+        submitBtn.setAttribute('data-loading', '1');
+        submitBtn.textContent = 'Đang lưu…';
+
+        var formData = new FormData(form);
+
+        fetch(form.action || window.location.href, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData,
+        })
+        .then(function (resp) {
+            if (resp.ok) {
+                // Thành công → chuyển về danh sách
+                return resp.json().then(function (data) {
+                    if (data.ok) {
+                        window.location.href = listUrl;
+                    }
+                });
+            } else if (resp.status === 422) {
+                // Lỗi validation → hiện lỗi inline
+                return resp.json().then(function (data) {
+                    showErrors(data.errors || {});
+                });
+            } else {
+                // Lỗi server khác
+                showBanner(['Có lỗi máy chủ (HTTP ' + resp.status + '). Vui lòng thử lại.']);
+            }
+        })
+        .catch(function () {
+            showBanner(['Không kết nối được máy chủ. Vui lòng kiểm tra mạng.']);
+        })
+        .finally(function () {
+            submitBtn.removeAttribute('data-loading');
+            submitBtn.textContent = 'Lưu';
+        });
+    });
+
+    /* Xoá tất cả lỗi hiện có */
+    function clearErrors() {
+        banner.innerHTML = '';
+        banner.classList.remove('visible');
+        // Xoá lỗi field cũ do AJAX
+        document.querySelectorAll('.field-error-ajax').forEach(function (el) { el.remove(); });
+        // Xoá border đỏ
+        document.querySelectorAll('.field-has-error').forEach(function (el) {
+            el.classList.remove('field-has-error');
+        });
+    }
+
+    /* Hiện lỗi banner chung */
+    function showBanner(msgs) {
+        banner.innerHTML = msgs.map(function (m) { return '<p>⚠️ ' + m + '</p>'; }).join('');
+        banner.classList.add('visible');
+        banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    /* Phân phối lỗi theo field */
+    function showErrors(errors) {
+        var nonFieldMsgs = [];
+
+        Object.keys(errors).forEach(function (fieldName) {
+            var msgs = errors[fieldName];
+            if (fieldName === '__all__') {
+                nonFieldMsgs = nonFieldMsgs.concat(msgs);
+                return;
+            }
+            // Tìm field-wrap theo html_name (có thể khác field.name với prefix)
+            var wrap = document.getElementById('field-wrap-' + fieldName);
+            if (wrap) {
+                wrap.classList.add('field-has-error');
+                msgs.forEach(function (msg) {
+                    var span = document.createElement('span');
+                    span.className = 'field-error-msg field-error-ajax';
+                    span.textContent = msg;
+                    wrap.appendChild(span);
+                });
+                // Scroll đến lỗi đầu tiên
+                if (Object.keys(errors)[0] === fieldName) {
+                    wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            } else {
+                // Field không hiện (geom hay hidden) → đưa vào banner
+                nonFieldMsgs = nonFieldMsgs.concat(msgs);
+            }
+        });
+
+        if (nonFieldMsgs.length) {
+            showBanner(nonFieldMsgs);
+        }
+    }
+})();
+</script>
 
 {% if entity == "phong" %}
 {# ── Cascade: Cơ sở → Tòa nhà → Tầng cho form Phòng ── #}
@@ -148,7 +404,6 @@
                     function (b) { return b.name; },
                     keepBuilding
                 );
-                // Trigger floor load nếu đã có building được chọn lại
                 if (buildingSel.value) loadFloors(buildingSel.value, keepFloor);
             });
     }
@@ -167,9 +422,6 @@
                     function (f) { return f.name + '  —  Tầng ' + f.level; },
                     keepFloor
                 );
-                // ── Quan trọng: dispatch 'change' để geom-editor.js biết floor đã được
-                //    set và load context layers (vị trí các phòng khác trong cùng tầng).
-                //    Cascade thay đổi select bằng code nên không tự có DOM event.
                 if (floorSel.value) {
                     floorSel.dispatchEvent(new Event('change'));
                 }
@@ -183,7 +435,6 @@
         loadFloors(buildingSel.value, null);
     });
 
-    // Khởi tạo cascade khi đang edit (đã có giá trị sẵn)
     var initCampus   = campusSel.value;
     var initBuilding = buildingSel.value;
     var initFloor    = floorSel.value;

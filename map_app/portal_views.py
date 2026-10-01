@@ -454,10 +454,19 @@ def entity_create(request, entity):
         if value:
             initial[parent] = value
     form = cfg["form"](request.POST or None, request.FILES or None, initial=initial or None)
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(request, f"Đã thêm {cfg['singular']}.")
-        return redirect("portal_entity_list", entity=entity)
+    if request.method == "POST":
+        is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        if form.is_valid():
+            form.save()
+            if is_ajax:
+                return JsonResponse({"ok": True})
+            messages.success(request, f"Đã thêm {cfg['singular']}.")
+            return redirect("portal_entity_list", entity=entity)
+        elif is_ajax:
+            errors = {}
+            for field_name, errs in form.errors.items():
+                errors[field_name] = [str(e) for e in errs]
+            return JsonResponse({"ok": False, "errors": errors}, status=422)
     return render(
         request,
         "manage/entity_form.html",
@@ -473,10 +482,19 @@ def entity_update(request, entity, pk):
         return redirect("portal_entity_list", entity=entity)
     obj = get_object_or_404(cfg["model"], pk=pk)
     form = cfg["form"](request.POST or None, request.FILES or None, instance=obj)
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(request, f"Đã cập nhật {cfg['singular']}.")
-        return redirect("portal_entity_list", entity=entity)
+    if request.method == "POST":
+        is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        if form.is_valid():
+            form.save()
+            if is_ajax:
+                return JsonResponse({"ok": True})
+            messages.success(request, f"Đã cập nhật {cfg['singular']}.")
+            return redirect("portal_entity_list", entity=entity)
+        elif is_ajax:
+            errors = {}
+            for field_name, errs in form.errors.items():
+                errors[field_name] = [str(e) for e in errs]
+            return JsonResponse({"ok": False, "errors": errors}, status=422)
     return render(
         request,
         "manage/entity_form.html",

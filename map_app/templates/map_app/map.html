@@ -157,9 +157,102 @@ html,body{height:100%;overflow:hidden;font-family:"Be Vietnam Pro","Segoe UI",sa
 @media(max-width:768px){
   #sidebar{position:absolute;left:0;top:0;height:100%;transform:translateX(-100%);z-index:900}
   #sidebar.open{transform:none;box-shadow:4px 0 24px rgba(0,0,0,.2)}
-  #sidebar-toggle{display:flex}
   #map-wrap{width:100%}
 }
+
+/* ══ LIGHTBOX ══ */
+#lightbox{
+  display:none;position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,.88);
+  align-items:center;justify-content:center;
+  flex-direction:column;gap:12px;
+}
+#lightbox.open{display:flex}
+#lightbox-img{
+  max-width:90vw;max-height:80vh;
+  border-radius:12px;object-fit:contain;
+  box-shadow:0 8px 40px rgba(0,0,0,.5);
+  transition:opacity .2s;
+}
+#lightbox-close{
+  position:absolute;top:16px;right:20px;
+  background:rgba(255,255,255,.15);border:0;border-radius:50%;
+  width:42px;height:42px;font-size:22px;color:white;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s;
+}
+#lightbox-close:hover{background:rgba(255,255,255,.3)}
+#lightbox-prev,#lightbox-next{
+  position:absolute;top:50%;transform:translateY(-50%);
+  background:rgba(255,255,255,.15);border:0;border-radius:50%;
+  width:48px;height:48px;font-size:26px;color:white;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s;
+}
+#lightbox-prev:hover,#lightbox-next:hover{background:rgba(255,255,255,.3)}
+#lightbox-prev{left:16px}
+#lightbox-next{right:16px}
+#lightbox-counter{color:rgba(255,255,255,.7);font-size:13px;font-family:"Be Vietnam Pro",sans-serif}
+#lightbox-prev.hidden,#lightbox-next.hidden{display:none}
+
+/* Ảnh trong carousel có thể click phóng to */
+.zoomable{cursor:zoom-in}
+
+/* ══ SEARCH ══ */
+#search-section{
+  padding:10px 14px;
+  border-bottom:1px solid #cde5d6;
+  flex-shrink:0;
+  position:relative;
+}
+.search-wrap{
+  display:flex;align-items:center;gap:8px;
+  background:white;border:1.5px solid #cde5d6;border-radius:12px;
+  padding:8px 12px;transition:border-color .15s;
+}
+.search-wrap:focus-within{border-color:#2f9e63;box-shadow:0 0 0 3px rgba(47,158,99,.12)}
+.search-icon{font-size:15px;color:#5c7468;flex-shrink:0}
+#search-input{
+  flex:1;border:0;outline:0;font:inherit;font-size:13px;
+  background:transparent;color:#0b3d2e;
+}
+#search-input::placeholder{color:#9ecbb2}
+#search-clear{
+  background:none;border:0;cursor:pointer;color:#9ecbb2;
+  font-size:16px;padding:0;display:none;line-height:1;
+}
+#search-clear:hover{color:#5c7468}
+
+#search-results{
+  position:absolute;left:14px;right:14px;top:100%;
+  background:white;border:1.5px solid #cde5d6;border-radius:12px;
+  box-shadow:0 8px 28px rgba(11,61,46,.13);
+  z-index:200;max-height:360px;overflow-y:auto;
+  display:none;
+}
+#search-results.open{display:block}
+.sr-group-label{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  color:#9ecbb2;padding:8px 14px 4px;background:#f7fbf8;
+  border-bottom:1px solid #e8f4ed;position:sticky;top:0;z-index:1;
+}
+.sr-item{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:10px 14px;cursor:pointer;
+  border-bottom:1px solid #f0f7f3;transition:background .12s;
+}
+.sr-item:last-child{border-bottom:0}
+.sr-item:hover{background:#eef7f1}
+.sr-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.sr-name{font-size:13px;font-weight:600;color:#0b3d2e;line-height:1.3}
+.sr-sub{font-size:11px;color:#5c7468;margin-top:2px}
+.sr-badge{
+  display:inline-flex;align-items:center;
+  font-size:10px;font-weight:700;text-transform:uppercase;
+  padding:2px 7px;border-radius:999px;margin-left:5px;vertical-align:middle;
+}
+.sr-empty{padding:20px 14px;text-align:center;color:#5c7468;font-size:13px}
+.sr-loading{padding:16px 14px;text-align:center;color:#5c7468;font-size:13px}
     </style>
 </head>
 <body>
@@ -187,6 +280,16 @@ html,body{height:100%;overflow:hidden;font-family:"Be Vietnam Pro","Segoe UI",sa
         <option value="">— Tất cả cơ sở —</option>
       </select>
     </div>
+  </div>
+
+  <!-- ════ SEARCH BOX (luôn hiển thị) ════ -->
+  <div id="search-section">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="Tìm tòa nhà, phòng, cây xanh…" autocomplete="off">
+      <button id="search-clear" title="Xóa">✕</button>
+    </div>
+    <div id="search-results"></div>
   </div>
 
   <!-- Layer chips (ẩn khi đang drill-down) -->
@@ -535,7 +638,7 @@ function bpGoSlide(idx) {
 document.getElementById('bp-prev').addEventListener('click', function(){ bpGoSlide(bpIdx-1); });
 document.getElementById('bp-next').addEventListener('click', function(){ bpGoSlide(bpIdx+1); });
 
-function openBuildingPanel(bId, bName, campusPk, feat, imgs) {
+function openBuildingPanel(bId, bName, campusPk, feat, imgs, autoFloorId, autoRoomId) {
   selBuildingId = bId;
   selCampusPk   = campusPk;
   currentBuildingName = bName;
@@ -557,7 +660,21 @@ function openBuildingPanel(bId, bName, campusPk, feat, imgs) {
 
   fetch(API_FLOORS + bId + '/')
     .then(function(r){ return r.json(); })
-    .then(function(data){ renderFloorList(data, bId, bName, campusLabel); })
+    .then(function(data){
+      renderFloorList(data, bId, bName, campusLabel);
+      // Auto-navigate đến tầng nếu có (từ search)
+      if (autoFloorId) {
+        var floorFeat = (data.features || []).find(function(f){
+          return String(f.id || f.properties.pk) === String(autoFloorId);
+        });
+        if (floorFeat) {
+          var p   = floorFeat.properties;
+          var lvl = (p.level !== null && p.level !== undefined) ? p.level : '?';
+          var nm  = p.name || ('Tầng ' + lvl);
+          selectFloor(autoFloorId, nm, lvl, floorFeat, bName, campusLabel, autoRoomId);
+        }
+      }
+    })
     .catch(function(){ fl.innerHTML = '<div class="no-data-msg">Không tải được dữ liệu.</div>'; });
 }
 
@@ -630,7 +747,7 @@ document.getElementById('fp-back').addEventListener('click', function(){
   }
 });
 
-function selectFloor(flId, flName, lvl, feat, bName, campusLabel) {
+function selectFloor(flId, flName, lvl, feat, bName, campusLabel, autoRoomId) {
   selFloorId = flId;
   currentFloorName = flName;
 
@@ -666,12 +783,34 @@ function selectFloor(flId, flName, lvl, feat, bName, campusLabel) {
   clearRoomLayer();
   showPanel('floor-panel');
 
+  function afterRoomRender(data) {
+    roomCache[flId] = data;
+    renderRoomList(data, flId, flName, bName, campusLabel);
+    // Auto-navigate đến phòng cụ thể (từ search)
+    if (autoRoomId) {
+      var roomFeat = (data.features || []).find(function(f){
+        return String(f.id || f.properties.pk) === String(autoRoomId);
+      });
+      if (roomFeat) {
+        highlightRoomItem(autoRoomId);
+        openRoomDetail(roomFeat.properties, flName, bName, campusLabel);
+        if (activeRoomLayer) {
+          activeRoomLayer.eachLayer(function(lyr){
+            if (String(lyr.feature.id||lyr.feature.properties.pk) === String(autoRoomId)) {
+              try { map.panTo(lyr.getLatLng(), {animate:true}); } catch(e){}
+            }
+          });
+        }
+      }
+    }
+  }
+
   var cached = roomCache[flId];
-  if (cached) { renderRoomList(cached, flId, flName, bName, campusLabel); return; }
+  if (cached) { afterRoomRender(cached); return; }
 
   fetch(API_ROOMS + flId + '/')
     .then(function(r){ return r.json(); })
-    .then(function(data){ roomCache[flId] = data; renderRoomList(data, flId, flName, bName, campusLabel); })
+    .then(afterRoomRender)
     .catch(function(){ rl.innerHTML = '<div class="no-data-msg">Không tải được dữ liệu.</div>'; });
 }
 
@@ -944,6 +1083,288 @@ map.on('click', function() {
   var browse = document.getElementById('browse-panel');
   if (browse.classList.contains('active')) closeDetail();
 });
+</script>
+
+<!-- ════════ SEARCH ENGINE ════════ -->
+<script>
+(function () {
+  var API_SEARCH = '{% url "map_search" %}';
+  var ROOM_TYPES = { classroom:'📚 Phòng học', lab:'🔬 Thực hành / Lab', wc:'🚻 Nhà vệ sinh', office:'💼 Văn phòng' };
+  var BADGE_COLORS = {
+    campus:  '#d8f3e3|#14532d', building:'#fef9c3|#854d0e',
+    floor:   '#fff7ed|#c2410c', room:    '#fce7f3|#9d174d',
+    green:   '#dcfce7|#15803d', parking: '#dbeafe|#1e40af',
+    tree:    '#f0fdf4|#166534',
+  };
+
+  var input   = document.getElementById('search-input');
+  var results = document.getElementById('search-results');
+  var clearBtn = document.getElementById('search-clear');
+  var timer;
+
+  input.addEventListener('input', function () {
+    var q = input.value.trim();
+    clearBtn.style.display = q ? 'block' : 'none';
+    clearTimeout(timer);
+    if (q.length < 2) { closeResults(); return; }
+    results.innerHTML = '<div class="sr-loading">🔍 Đang tìm kiếm…</div>';
+    results.classList.add('open');
+    timer = setTimeout(function () { doSearch(q); }, 320);
+  });
+
+  clearBtn.addEventListener('click', function () {
+    input.value = '';
+    clearBtn.style.display = 'none';
+    closeResults();
+    input.focus();
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!document.getElementById('search-section').contains(e.target)) closeResults();
+  });
+
+  function closeResults() {
+    results.classList.remove('open');
+    results.innerHTML = '';
+  }
+
+  function doSearch(q) {
+    fetch(API_SEARCH + '?q=' + encodeURIComponent(q))
+      .then(function(r){ return r.json(); })
+      .then(function(data){ renderResults(data.results || []); })
+      .catch(function(){ results.innerHTML = '<div class="sr-empty">Không kết nối được. Thử lại sau.</div>'; });
+  }
+
+  function renderResults(items) {
+    if (!items.length) {
+      results.innerHTML = '<div class="sr-empty">Không tìm thấy kết quả nào.</div>';
+      return;
+    }
+
+    // Nhóm kết quả theo type
+    var groups = {};
+    var ORDER  = ['campus','building','floor','room','green','parking','tree'];
+    items.forEach(function (it) {
+      if (!groups[it.type]) groups[it.type] = [];
+      groups[it.type].push(it);
+    });
+
+    var html = '';
+    ORDER.forEach(function (type) {
+      if (!groups[type]) return;
+      var sample = groups[type][0];
+      html += '<div class="sr-group-label">' + sample.icon + ' ' + sample.label + '</div>';
+      groups[type].forEach(function (it) {
+        var colors = (BADGE_COLORS[it.type] || '#e2e8f0|#374151').split('|');
+        var sub = it.campus ? '🏫 ' + it.campus : '';
+        if (it.type === 'room')    sub = (ROOM_TYPES[it.room_type] || it.room_type || '') + (it.building_name ? ' · 🏢 ' + it.building_name : '');
+        if (it.type === 'floor')   sub = '🏢 ' + (it.building_name || '') + (it.campus ? ' · ' + it.campus : '');
+        if (it.type === 'tree')    sub = (it.health || '') + (it.campus ? ' · 🏫 ' + it.campus : '');
+        if (it.type === 'green')   sub = (it.detail_type || '') + (it.campus ? ' · 🏫 ' + it.campus : '');
+        if (it.type === 'parking') sub = (it.capacity ? it.capacity + ' xe' : '') + (it.campus ? ' · 🏫 ' + it.campus : '');
+        html +=
+          '<div class="sr-item" data-idx="' + it.id + '" data-type="' + it.type + '">' +
+          '<span class="sr-icon">' + it.icon + '</span>' +
+          '<div>' +
+            '<div class="sr-name">' + it.name +
+              '<span class="sr-badge" style="background:' + colors[0] + ';color:' + colors[1] + '">' + it.label + '</span>' +
+            '</div>' +
+            (sub ? '<div class="sr-sub">' + sub + '</div>' : '') +
+          '</div></div>';
+      });
+    });
+
+    results.innerHTML = html;
+
+    // Bind click lên từng item
+    results.querySelectorAll('.sr-item').forEach(function (el) {
+      var type = el.dataset.type;
+      var idx  = parseInt(el.dataset.idx, 10);
+      var it   = items.find(function(i){ return i.id === idx && i.type === type; });
+      if (!it) return;
+      el.addEventListener('click', function () {
+        closeResults();
+        input.value = it.name;
+        clearBtn.style.display = 'block';
+        navigateTo(it);
+      });
+    });
+  }
+
+  /* ── Navigate đến entity khi click kết quả ── */
+  function navigateTo(it) {
+    var latlng = L.latLng(it.lat, it.lng);
+
+    if (it.type === 'campus') {
+      map.flyTo(latlng, 17, { duration: 1.2 });
+      goBrowse();
+      showDetail({
+        type: 'Khuôn viên', badgeClass: 'badge-campus', icon: '🏫',
+        title: it.name, images: it.images || [], meta: []
+      });
+
+    } else if (it.type === 'building') {
+      map.flyTo(latlng, 18, { duration: 1.2 });
+      // Tìm feature từ buildingData
+      var feat = null;
+      buildingData.features && buildingData.features.forEach(function(f){
+        if (String(f.id||f.properties.pk) === String(it.id)) feat = f;
+      });
+      var imgs = it.images || [];
+      openBuildingPanel(it.id, it.name, it.campus_pk, feat, imgs);
+
+    } else if (it.type === 'floor') {
+      map.flyTo(latlng, 19, { duration: 1.2 });
+      // Mở building panel rồi auto-select tầng đó
+      var bldFeat = null;
+      buildingData.features && buildingData.features.forEach(function(f){
+        if (String(f.id||f.properties.pk) === String(it.building_id)) bldFeat = f;
+      });
+      openBuildingPanel(it.building_id, it.building_name, it.campus_pk, bldFeat, [], it.id, null);
+
+    } else if (it.type === 'room') {
+      map.flyTo(latlng, 20, { duration: 1.2 });
+      var bFeat = null;
+      buildingData.features && buildingData.features.forEach(function(f){
+        if (String(f.id||f.properties.pk) === String(it.building_id)) bFeat = f;
+      });
+      openBuildingPanel(it.building_id, it.building_name, it.campus_pk, bFeat, [], it.floor_id, it.id);
+
+    } else if (it.type === 'green') {
+      map.flyTo(latlng, 18, { duration: 1.2 });
+      goBrowse();
+      showDetail({
+        type: 'Mảng xanh', badgeClass: 'badge-green', icon: '🌿',
+        title: it.name, images: it.images || [],
+        meta: [['🌱', 'Loại mảng xanh', it.detail_type], ['🏫', 'Thuộc cơ sở', it.campus]]
+      });
+
+    } else if (it.type === 'parking') {
+      map.flyTo(latlng, 18, { duration: 1.2 });
+      goBrowse();
+      showDetail({
+        type: 'Bãi xe', badgeClass: 'badge-parking', icon: '🅿️',
+        title: it.name, images: it.images || [],
+        meta: [['🔢', 'Sức chứa', it.capacity ? it.capacity + ' xe' : 'Chưa cập nhật'], ['🏫', 'Thuộc cơ sở', it.campus]]
+      });
+
+    } else if (it.type === 'tree') {
+      map.flyTo(latlng, 20, { duration: 1.2 });
+      goBrowse();
+      showDetail({
+        type: 'Cây xanh', badgeClass: 'badge-tree', icon: '🌳',
+        title: it.name, images: it.images || [],
+        meta: [['💚', 'Tình trạng', it.health], ['🏫', 'Thuộc cơ sở', it.campus]]
+      });
+    }
+
+    // Mở sidebar nếu đang ẩn (mobile)
+    document.getElementById('sidebar').classList.add('open');
+  }
+})();
+</script>
+
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="Xem ảnh phóng to">
+  <button id="lightbox-close" title="Đóng (Esc)">✕</button>
+  <button id="lightbox-prev" class="hidden" title="Ảnh trước">‹</button>
+  <img id="lightbox-img" src="" alt="Ảnh phóng to">
+  <div id="lightbox-counter"></div>
+  <button id="lightbox-next" class="hidden" title="Ảnh tiếp">›</button>
+</div>
+
+<script>
+/* ════════════════════════════════════════
+   LIGHTBOX — click ảnh trong carousel để phóng to
+════════════════════════════════════════ */
+(function () {
+  var lb      = document.getElementById('lightbox');
+  var lbImg   = document.getElementById('lightbox-img');
+  var lbClose = document.getElementById('lightbox-close');
+  var lbPrev  = document.getElementById('lightbox-prev');
+  var lbNext  = document.getElementById('lightbox-next');
+  var lbCount = document.getElementById('lightbox-counter');
+
+  var lbImgs  = [];   // mảng src ảnh trong group hiện tại
+  var lbIdx   = 0;
+
+  /* Mở lightbox */
+  function openLightbox(imgs, startIdx) {
+    lbImgs = imgs;
+    lbIdx  = startIdx || 0;
+    renderLb();
+    lb.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  /* Render ảnh hiện tại */
+  function renderLb() {
+    lbImg.style.opacity = '0';
+    lbImg.src = lbImgs[lbIdx];
+    lbImg.onload = function () { lbImg.style.opacity = '1'; };
+    if (lbImgs.length > 1) {
+      lbCount.textContent = (lbIdx + 1) + ' / ' + lbImgs.length;
+      lbPrev.classList.toggle('hidden', lbIdx === 0);
+      lbNext.classList.toggle('hidden', lbIdx === lbImgs.length - 1);
+    } else {
+      lbCount.textContent = '';
+      lbPrev.classList.add('hidden');
+      lbNext.classList.add('hidden');
+    }
+  }
+
+  /* Đóng */
+  function closeLightbox() {
+    lb.classList.remove('open');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+
+  lbClose.addEventListener('click', closeLightbox);
+  lb.addEventListener('click', function (e) { if (e.target === lb) closeLightbox(); });
+
+  lbPrev.addEventListener('click', function () { if (lbIdx > 0) { lbIdx--; renderLb(); } });
+  lbNext.addEventListener('click', function () { if (lbIdx < lbImgs.length - 1) { lbIdx++; renderLb(); } });
+
+  /* Bàn phím */
+  document.addEventListener('keydown', function (e) {
+    if (!lb.classList.contains('open')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft'  && lbIdx > 0) { lbIdx--; renderLb(); }
+    if (e.key === 'ArrowRight' && lbIdx < lbImgs.length - 1) { lbIdx++; renderLb(); }
+  });
+
+  /* ─── Gắn click handler cho ảnh carousel ─── 
+     Dùng MutationObserver để tự động detect khi ảnh mới được thêm vào DOM
+     (carousel render động bằng JS nên không thể bind sẵn) */
+  function bindImgClick(img) {
+    if (img._lbBound) return;
+    img._lbBound = true;
+    img.classList.add('zoomable');
+    img.addEventListener('click', function () {
+      // Lấy tất cả ảnh trong cùng container carousel
+      var container = img.closest('[id$="-track"]') || img.parentElement;
+      var siblings  = Array.from(container.querySelectorAll('img'));
+      var imgs      = siblings.map(function (s) { return s.src; }).filter(Boolean);
+      var idx       = siblings.indexOf(img);
+      openLightbox(imgs.length ? imgs : [img.src], Math.max(0, idx));
+    });
+  }
+
+  /* Observer tự bind khi img được insert */
+  var observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (m) {
+      m.addedNodes.forEach(function (node) {
+        if (node.nodeType !== 1) return;
+        if (node.tagName === 'IMG') bindImgClick(node);
+        node.querySelectorAll && node.querySelectorAll('img').forEach(bindImgClick);
+      });
+    });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  /* Bind ảnh đã có sẵn khi load trang */
+  document.querySelectorAll('img').forEach(bindImgClick);
+})();
 </script>
 </body>
 </html>

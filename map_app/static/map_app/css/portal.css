@@ -481,6 +481,14 @@ select:focus {
   font-size: 13px;
 }
 
+/* AJAX inline errors */
+.field-has-error input,
+.field-has-error select,
+.field-has-error textarea {
+  border-color: #fca5a5 !important;
+  outline: 2px solid #fca5a5 !important;
+}
+
 .perm-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));

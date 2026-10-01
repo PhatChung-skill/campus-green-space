@@ -202,17 +202,67 @@
     }
 
     // ─── Vẽ hình học ───
-    if (geomType === 'point') {
-        map.on('click', function (e) {
-            drawn.clearLayers();
-            const marker = L.marker(e.latlng, { draggable: true }).addTo(drawn);
-            setValue(marker);
-            marker.on('dragend', function () { setValue(marker); });
+    var currentMarker = null;   // giữ tham chiếu marker hiện tại (cho point)
+
+    function setPointMarker(latlng) {
+        drawn.clearLayers();
+        var marker = L.marker(latlng, { draggable: true }).addTo(drawn);
+        currentMarker = marker;
+
+        // Ghi geojson
+        hidden.value = JSON.stringify({
+            type: 'Point',
+            coordinates: [latlng.lng, latlng.lat]
         });
+
+        // Thông báo cho form lat/lng inputs (nếu có)
+        if (typeof window.updateCoordsFromMap === 'function') {
+            window.updateCoordsFromMap(latlng.lat, latlng.lng);
+        }
+
+        marker.on('dragend', function () {
+            var p = marker.getLatLng();
+            hidden.value = JSON.stringify({
+                type: 'Point',
+                coordinates: [p.lng, p.lat]
+            });
+            if (typeof window.updateCoordsFromMap === 'function') {
+                window.updateCoordsFromMap(p.lat, p.lng);
+            }
+        });
+    }
+
+    if (geomType === 'point') {
+        // Expose để entity_form có thể đặt marker từ lat/lng inputs
+        window._geomEditorSetPoint = function (lat, lng) {
+            var latlng = L.latLng(lat, lng);
+            setPointMarker(latlng);
+            map.panTo(latlng, { animate: true });
+        };
+
+        map.on('click', function (e) {
+            setPointMarker(e.latlng);
+        });
+
+        // Marker có sẵn khi edit (addExisting đã thêm vào drawn)
         drawn.eachLayer(function (layer) {
             if (layer.dragging) {
                 layer.dragging.enable();
-                layer.on('dragend', function () { setValue(layer); });
+                currentMarker = layer;
+                var p = layer.getLatLng();
+                if (typeof window.updateCoordsFromMap === 'function') {
+                    window.updateCoordsFromMap(p.lat, p.lng);
+                }
+                layer.on('dragend', function () {
+                    var p2 = layer.getLatLng();
+                    hidden.value = JSON.stringify({
+                        type: 'Point',
+                        coordinates: [p2.lng, p2.lat]
+                    });
+                    if (typeof window.updateCoordsFromMap === 'function') {
+                        window.updateCoordsFromMap(p2.lat, p2.lng);
+                    }
+                });
             }
         });
     } else if (typeof L.Control !== 'undefined' && L.Control.Draw) {
