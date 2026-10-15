@@ -253,6 +253,13 @@ html,body{height:100%;overflow:hidden;font-family:"Be Vietnam Pro","Segoe UI",sa
 }
 .sr-empty{padding:20px 14px;text-align:center;color:#5c7468;font-size:13px}
 .sr-loading{padding:16px 14px;text-align:center;color:#5c7468;font-size:13px}
+
+/* Highlight / Focus trên bản đồ khi chọn đối tượng */
+.leaflet-interactive:focus,
+.leaflet-interactive:focus-visible {
+  outline: 2px solid #000000 !important;
+  outline-offset: 2px !important;
+}
     </style>
 </head>
 <body>
@@ -286,7 +293,7 @@ html,body{height:100%;overflow:hidden;font-family:"Be Vietnam Pro","Segoe UI",sa
   <div id="search-section">
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
-      <input type="text" id="search-input" placeholder="Tìm tòa nhà, phòng, cây xanh…" autocomplete="off">
+      <input type="text" id="search-input" placeholder="Tìm kiếm..." autocomplete="off">
       <button id="search-clear" title="Xóa">✕</button>
     </div>
     <div id="search-results"></div>
@@ -527,11 +534,62 @@ function resetToCampus() {
 });
 
 /* ═══════════════════════════════════════
+   SELECTION HIGHLIGHT
+═══════════════════════════════════════ */
+function clearSelectionHighlight() {
+  if (typeof greens !== 'undefined' && greens) {
+    greens.eachLayer(function(l) {
+      l.setStyle({ color: '#15803d', weight: 1.5, fillColor: '#4ade80', fillOpacity: 0.5 });
+    });
+  }
+  if (typeof parkings !== 'undefined' && parkings) {
+    parkings.eachLayer(function(l) {
+      l.setStyle({ color: '#1e3a8a', weight: 1.5, fillColor: '#93c5fd', fillOpacity: 0.45 });
+    });
+  }
+  if (typeof trees !== 'undefined' && trees) {
+    trees.eachLayer(function(l) {
+      var ok = l.feature && l.feature.properties && l.feature.properties.health_status === 'good';
+      l.setStyle({ radius: 8, color: ok ? '#14532d' : '#b45309', fillColor: ok ? '#22c55e' : '#fbbf24', fillOpacity: 0.95, weight: 1.5 });
+    });
+    // Luôn đưa cây xanh lên trên cùng để không bị polygon nào che khuất
+    if (map.hasLayer(trees)) trees.bringToFront();
+  }
+}
+
+function highlightFeature(lyr, type) {
+  clearSelectionHighlight();
+  if (!lyr) return;
+
+  // Viền chọn nhẹ nhàng, tự nhiên như các đối tượng khác (không dùng bounding box quá đậm)
+  if (type === 'parking') {
+    if (lyr.setStyle) {
+      lyr.setStyle({ color: '#1d4ed8', weight: 2.5, fillColor: '#93c5fd', fillOpacity: 0.65 });
+    }
+  } else if (type === 'green') {
+    if (lyr.setStyle) {
+      lyr.setStyle({ color: '#15803d', weight: 2.5, fillColor: '#4ade80', fillOpacity: 0.7 });
+    }
+  } else if (type === 'tree') {
+    if (lyr.setStyle) {
+      lyr.setStyle({ radius: 9, color: '#0f172a', weight: 2.5, fillOpacity: 1 });
+      if (lyr.bringToFront) lyr.bringToFront();
+    }
+  }
+
+  // Đảm bảo cây xanh luôn luôn nổi trên các polygon sau mọi thao tác
+  if (typeof trees !== 'undefined' && trees && map.hasLayer(trees)) {
+    trees.bringToFront();
+  }
+}
+
+/* ═══════════════════════════════════════
    GO BROWSE (back to map)
 ═══════════════════════════════════════ */
 function goBrowse() {
   clearFloorLayer();
   clearRoomLayer();
+  clearSelectionHighlight();
   selBuildingId = null; selFloorId = null;
   showPanel('browse-panel');
   closeDetail();
@@ -582,6 +640,10 @@ document.getElementById('btn-prev').addEventListener('click', function(){ goSlid
 document.getElementById('btn-next').addEventListener('click', function(){ goSlide(carIdx+1); });
 
 function showDetail(opts) {
+  clearFloorLayer();
+  clearRoomLayer();
+  selBuildingId = null;
+  selFloorId = null;
   showPanel('browse-panel');
   document.getElementById('detail-empty').style.display = 'none';
   buildCarousel(opts.images, opts.icon);
@@ -600,6 +662,11 @@ function showDetail(opts) {
 }
 
 function closeDetail() {
+  clearFloorLayer();
+  clearRoomLayer();
+  selBuildingId = null;
+  selFloorId = null;
+  clearSelectionHighlight();
   document.getElementById('detail-empty').style.display = 'flex';
   document.getElementById('carousel').style.display = 'none';
   document.getElementById('detail-body').style.display = 'none';
@@ -639,6 +706,7 @@ document.getElementById('bp-prev').addEventListener('click', function(){ bpGoSli
 document.getElementById('bp-next').addEventListener('click', function(){ bpGoSlide(bpIdx+1); });
 
 function openBuildingPanel(bId, bName, campusPk, feat, imgs, autoFloorId, autoRoomId) {
+  clearSelectionHighlight();
   selBuildingId = bId;
   selCampusPk   = campusPk;
   currentBuildingName = bName;
@@ -695,7 +763,8 @@ function renderFloorList(geojson, bId, bName, campusLabel) {
   // Hiện ranh giới tất cả tầng trên map (nhạt)
   clearFloorLayer();
   activeFloorLayer = L.geoJSON(geojson, {
-    style: { color:'#c2410c', weight:1.5, fillColor:'#fdba74', fillOpacity:0.12, dashArray:'5 4' }
+    interactive: false,
+    style: { color:'#c2410c', weight:1.5, fillColor:'#fdba74', fillOpacity:0.12, dashArray:'5 4', interactive: false }
   }).addTo(map);
   try { var b = activeFloorLayer.getBounds(); if (b&&b.isValid()) map.fitBounds(b,{padding:[40,40],maxZoom:19}); } catch(e){}
 
@@ -742,7 +811,8 @@ document.getElementById('fp-back').addEventListener('click', function(){
   if (selBuildingId && floorCache[selBuildingId]) {
     clearFloorLayer();
     activeFloorLayer = L.geoJSON(floorCache[selBuildingId], {
-      style:{ color:'#c2410c', weight:1.5, fillColor:'#fdba74', fillOpacity:0.12, dashArray:'5 4' }
+      interactive: false,
+      style:{ color:'#c2410c', weight:1.5, fillColor:'#fdba74', fillOpacity:0.12, dashArray:'5 4', interactive: false }
     }).addTo(map);
   }
 });
@@ -760,11 +830,12 @@ function selectFloor(flId, flName, lvl, feat, bName, campusLabel, autoRoomId) {
   if (bldGeojson) {
     clearFloorLayer();
     activeFloorLayer = L.geoJSON(bldGeojson, {
+      interactive: false,
       style: function(f) {
         var fid = f.id || f.properties.pk;
         return String(fid) === String(flId)
-          ? { color:'#ea580c', weight:2.5, fillColor:'#fed7aa', fillOpacity:0.35 }
-          : { color:'#c2410c', weight:1, fillColor:'#fdba74', fillOpacity:0.08, dashArray:'5 4' };
+          ? { color:'#ea580c', weight:2.5, fillColor:'#fed7aa', fillOpacity:0.35, interactive: false }
+          : { color:'#c2410c', weight:1, fillColor:'#fdba74', fillOpacity:0.08, dashArray:'5 4', interactive: false };
       }
     }).addTo(map);
     try {
@@ -792,15 +863,7 @@ function selectFloor(flId, flName, lvl, feat, bName, campusLabel, autoRoomId) {
         return String(f.id || f.properties.pk) === String(autoRoomId);
       });
       if (roomFeat) {
-        highlightRoomItem(autoRoomId);
-        openRoomDetail(roomFeat.properties, flName, bName, campusLabel);
-        if (activeRoomLayer) {
-          activeRoomLayer.eachLayer(function(lyr){
-            if (String(lyr.feature.id||lyr.feature.properties.pk) === String(autoRoomId)) {
-              try { map.panTo(lyr.getLatLng(), {animate:true}); } catch(e){}
-            }
-          });
-        }
+        selectRoom(autoRoomId, roomFeat.properties, flName, bName, campusLabel);
       }
     }
   }
@@ -815,9 +878,29 @@ function selectFloor(flId, flName, lvl, feat, bName, campusLabel, autoRoomId) {
 }
 
 /* ═══════════════════════════════════════
-   ROOM LIST
+   ROOM LIST & SELECTION
 ═══════════════════════════════════════ */
 var ROOM_TYPES = { classroom:'📚 Phòng học', lab:'🔬 Thực hành / Lab', wc:'🚻 Nhà vệ sinh', office:'💼 Văn phòng' };
+
+function selectRoom(fid, p, flName, bName, campusLabel) {
+  highlightRoomItem(fid);
+  if (activeRoomLayer) {
+    activeRoomLayer.eachLayer(function(lyr) {
+      var rId = lyr.feature.id || lyr.feature.properties.pk;
+      if (String(rId) === String(fid)) {
+        lyr.setStyle({ radius:8, color:'#000000', fillColor:'#f43f5e', fillOpacity:1, weight:3 });
+        if (lyr.bringToFront) lyr.bringToFront();
+        if (lyr._path) { lyr._path.focus && lyr._path.focus(); }
+        lyr.openTooltip();
+        try { map.panTo(lyr.getLatLng(), { animate:true }); } catch(e){}
+      } else {
+        lyr.setStyle({ radius:7, color:'#9d174d', fillColor:'#f9a8d4', fillOpacity:0.92, weight:1.5 });
+        lyr.closeTooltip();
+      }
+    });
+  }
+  openRoomDetail(p, flName, bName, campusLabel);
+}
 
 function renderRoomList(geojson, flId, flName, bName, campusLabel) {
   var feats = geojson.features || [];
@@ -842,8 +925,7 @@ function renderRoomList(geojson, flId, flName, bName, campusLabel) {
         { permanent:false, direction:'top' });
       lyr.on('click', function(e) {
         L.DomEvent.stopPropagation(e);
-        highlightRoomItem(fid);
-        openRoomDetail(p, flName, bName, campusLabel);
+        selectRoom(fid, p, flName, bName, campusLabel);
       });
     }
   }).addTo(map);
@@ -861,17 +943,7 @@ function renderRoomList(geojson, flId, flName, bName, campusLabel) {
       '<div class="room-type-label">'+(ROOM_TYPES[p.room_type]||p.room_type||'')+'</div></div>';
 
     item.addEventListener('click', function() {
-      highlightRoomItem(fid);
-      // Pan đến phòng trên map
-      if (activeRoomLayer) {
-        activeRoomLayer.eachLayer(function(lyr) {
-          if ((lyr.feature.id||lyr.feature.properties.pk) == fid) {
-            try { map.panTo(lyr.getLatLng(), {animate:true}); } catch(e){}
-            lyr.openTooltip();
-          }
-        });
-      }
-      openRoomDetail(p, flName, bName, campusLabel);
+      selectRoom(fid, p, flName, bName, campusLabel);
     });
     rl.appendChild(item);
   });
@@ -890,7 +962,12 @@ var rdpImgs = [], rdpIdx = 0;
 
 document.getElementById('rdp-back').addEventListener('click', function(){
   showPanel('floor-panel');
-  // Room markers tetain trên map
+  if (activeRoomLayer) {
+    activeRoomLayer.eachLayer(function(lyr) {
+      lyr.setStyle({ radius:7, color:'#9d174d', fillColor:'#f9a8d4', fillOpacity:0.92, weight:1.5 });
+      lyr.closeTooltip();
+    });
+  }
 });
 
 function openRoomDetail(p, flName, bName, campusLabel) {
@@ -926,6 +1003,7 @@ function openRoomDetail(p, flName, bName, campusLabel) {
     ['📐', 'Tầng',       flName],
     ['🏢', 'Tòa nhà',    bName],
   ];
+  if (p.description) meta.push(['📝', 'Mô tả', p.description]);
   meta.forEach(function(m){
     if (!m[2]) return;
     var li = document.createElement('li');
@@ -978,6 +1056,7 @@ layerDefs.forEach(function(def) {
       map.addLayer(lyr);
       // campus phải ở dưới building để building vẫn clickable
       if (def.key === 'campus') lyr.bringToBack();
+      if (typeof trees !== 'undefined' && trees && map.hasLayer(trees)) trees.bringToFront();
     } else {
       map.removeLayer(lyr);
     }
@@ -998,10 +1077,12 @@ var campuses = L.geoJSON(campusData, {
   style: { color:'#0b3d2e', weight:2.5, fillColor:'#16a34a', fillOpacity:0.08 },
   onEachFeature: function(f, lyr) {
     var p = f.properties;
+    var orderLabel = p.campus_order ? 'Cơ sở ' + p.campus_order : '';
     lyr.on('click', function(e) {
       L.DomEvent.stopPropagation(e);
       goBrowse();
-      showDetail({ type:'Khuôn viên', badgeClass:'badge-campus', icon:'🏫', title:p.name, images:[p.image_1,p.image_2,p.image_3], meta:[] });
+      showDetail({ type:'Khuôn viên', badgeClass:'badge-campus', icon:'🏫', title:p.name, images:[p.image_1,p.image_2,p.image_3],
+        meta: orderLabel ? [['🔢','Số thứ tự', orderLabel]] : [] });
     });
   }
 }).addTo(map);
@@ -1029,10 +1110,16 @@ var greens = L.geoJSON(greenData, {
   onEachFeature: function(f, lyr) {
     var p = f.properties;
     var typeLabel = p.type === 'grass' ? '🌿 Thảm cỏ' : '🌸 Vườn hoa / Cây cảnh';
+    lyr.bindTooltip('<b>' + (p.name || 'Mảng xanh') + '</b>', { sticky: true, direction: 'top' });
     lyr.on('click', function(e) {
       L.DomEvent.stopPropagation(e);
-      goBrowse();
-      showDetail({ type:'Mảng xanh', badgeClass:'badge-green', icon:'🌿', title:p.name, images:[p.image_1,p.image_2,p.image_3], meta:[['🌱','Loại mảng xanh',typeLabel],['🏫','Thuộc cơ sở',p.campus]] });
+      highlightFeature(lyr, 'green');
+      var meta = [
+        ['🌱', 'Loại mảng xanh', typeLabel],
+        ['🏫', 'Thuộc cơ sở', p.campus],
+      ];
+      if (p.description) meta.push(['📝', 'Mô tả', p.description]);
+      showDetail({ type:'Mảng xanh', badgeClass:'badge-green', icon:'🌿', title:p.name, images:[p.image_1,p.image_2,p.image_3], meta:meta });
     });
   }
 }).addTo(map);
@@ -1043,10 +1130,16 @@ var parkings = L.geoJSON(parkingData, {
   style: { color:'#1e3a8a', weight:1.5, fillColor:'#93c5fd', fillOpacity:0.45 },
   onEachFeature: function(f, lyr) {
     var p = f.properties;
+    lyr.bindTooltip('<b>' + (p.name || 'Bãi xe') + '</b>' + (p.capacity ? '<br><small>Sức chứa: ' + p.capacity + ' xe</small>' : ''), { sticky: true, direction: 'top' });
     lyr.on('click', function(e) {
       L.DomEvent.stopPropagation(e);
-      goBrowse();
-      showDetail({ type:'Bãi xe', badgeClass:'badge-parking', icon:'🅿️', title:p.name, images:[p.image_1,p.image_2,p.image_3], meta:[['🔢','Sức chứa',p.capacity?p.capacity+' xe':'Chưa cập nhật'],['🏫','Thuộc cơ sở',p.campus]] });
+      highlightFeature(lyr, 'parking');
+      var meta = [
+        ['🔢', 'Sức chứa', p.capacity ? p.capacity + ' xe' : 'Chưa cập nhật'],
+        ['🏫', 'Thuộc cơ sở', p.campus],
+      ];
+      if (p.description) meta.push(['📝', 'Mô tả', p.description]);
+      showDetail({ type:'Bãi xe', badgeClass:'badge-parking', icon:'🅿️', title:p.name, images:[p.image_1,p.image_2,p.image_3], meta:meta });
     });
   }
 }).addTo(map);
@@ -1060,10 +1153,16 @@ var trees = L.geoJSON(treeData, {
   },
   onEachFeature: function(f, lyr) {
     var p = f.properties;
+    lyr.bindTooltip('<b>' + (p.species || 'Cây xanh') + '</b>', { sticky: true, direction: 'top' });
     lyr.on('click', function(e) {
       L.DomEvent.stopPropagation(e);
-      goBrowse();
-      showDetail({ type:'Cây xanh', badgeClass:'badge-tree', icon:'🌳', title:p.species||'Cây xanh', images:[p.image_1,p.image_2,p.image_3], meta:[['💚','Tình trạng',HEALTH[p.health_status]||p.health_status],['🏫','Thuộc cơ sở',p.campus]] });
+      highlightFeature(lyr, 'tree');
+      var meta = [
+        ['💚', 'Tình trạng', HEALTH[p.health_status] || p.health_status],
+        ['🏫', 'Thuộc cơ sở', p.campus],
+      ];
+      if (p.description) meta.push(['📝', 'Mô tả', p.description]);
+      showDetail({ type:'Cây xanh', badgeClass:'badge-tree', icon:'🌳', title:p.species||'Cây xanh', images:[p.image_1,p.image_2,p.image_3], meta:meta });
     });
   }
 }).addTo(map);
@@ -1071,6 +1170,8 @@ registerLayer('tree', trees);
 
 // Campus ở dưới cùng (z-order)
 campuses.bringToBack();
+// Cây xanh ở trên cùng (z-order)
+if (typeof trees !== 'undefined' && trees) trees.bringToFront();
 
 /* Basemap control */
 L.control.layers({ '🗺️ Đường phố':streetLayer, '🛰️ Vệ tinh':satelliteLayer }, {}, { collapsed:true, position:'topright' }).addTo(map);
@@ -1089,18 +1190,43 @@ map.on('click', function() {
 <script>
 (function () {
   var API_SEARCH = '{% url "map_search" %}';
-  var ROOM_TYPES = { classroom:'📚 Phòng học', lab:'🔬 Thực hành / Lab', wc:'🚻 Nhà vệ sinh', office:'💼 Văn phòng' };
+  var ROOM_TYPES = {
+    classroom: '📚 Phòng học', lab: '🔬 Thực hành / Lab',
+    wc: '🚻 Nhà vệ sinh', office: '💼 Văn phòng'
+  };
   var BADGE_COLORS = {
-    campus:  '#d8f3e3|#14532d', building:'#fef9c3|#854d0e',
-    floor:   '#fff7ed|#c2410c', room:    '#fce7f3|#9d174d',
-    green:   '#dcfce7|#15803d', parking: '#dbeafe|#1e40af',
+    campus:  '#d8f3e3|#14532d', building: '#fef9c3|#854d0e',
+    floor:   '#fff7ed|#c2410c', room:     '#fce7f3|#9d174d',
+    green:   '#dcfce7|#15803d', parking:  '#dbeafe|#1e40af',
     tree:    '#f0fdf4|#166534',
   };
+  var TYPE_LABELS = {
+    campus:'Khuôn viên', building:'Tòa nhà', floor:'Tầng',
+    room:'Phòng', green:'Mảng xanh', parking:'Bãi xe', tree:'Cây xanh',
+  };
 
-  var input   = document.getElementById('search-input');
-  var results = document.getElementById('search-results');
+  var input    = document.getElementById('search-input');
+  var results  = document.getElementById('search-results');
   var clearBtn = document.getElementById('search-clear');
   var timer;
+  var lastItems = [];
+
+  function ensureLayerActive(key) {
+    var chip = document.querySelector('.layer-chip[data-key="'+key+'"]');
+    if (chip) {
+      var cb = chip.querySelector('input');
+      if (cb && !cb.checked) {
+        cb.checked = true;
+        chip.classList.add('active');
+        var lyr = layerMap[key];
+        if (lyr) {
+          map.addLayer(lyr);
+          if (key === 'campus') lyr.bringToBack();
+          if (typeof trees !== 'undefined' && trees && map.hasLayer(trees)) trees.bringToFront();
+        }
+      }
+    }
+  }
 
   input.addEventListener('input', function () {
     var q = input.value.trim();
@@ -1109,7 +1235,7 @@ map.on('click', function() {
     if (q.length < 2) { closeResults(); return; }
     results.innerHTML = '<div class="sr-loading">🔍 Đang tìm kiếm…</div>';
     results.classList.add('open');
-    timer = setTimeout(function () { doSearch(q); }, 320);
+    timer = setTimeout(function () { doSearch(q); }, 280);
   });
 
   clearBtn.addEventListener('click', function () {
@@ -1123,51 +1249,95 @@ map.on('click', function() {
     if (!document.getElementById('search-section').contains(e.target)) closeResults();
   });
 
+  /* Phím tắt: Enter → chọn kết quả đầu tiên */
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && lastItems.length) {
+      e.preventDefault();
+      closeResults();
+      input.value = lastItems[0].name;
+      clearBtn.style.display = 'block';
+      navigateTo(lastItems[0]);
+    }
+    if (e.key === 'Escape') { closeResults(); input.blur(); }
+  });
+
   function closeResults() {
     results.classList.remove('open');
     results.innerHTML = '';
   }
 
   function doSearch(q) {
-    fetch(API_SEARCH + '?q=' + encodeURIComponent(q))
-      .then(function(r){ return r.json(); })
-      .then(function(data){ renderResults(data.results || []); })
-      .catch(function(){ results.innerHTML = '<div class="sr-empty">Không kết nối được. Thử lại sau.</div>'; });
+    var campusSelect = document.getElementById('campus-select');
+    var campusId = campusSelect ? campusSelect.value : '';
+    var url = API_SEARCH + '?q=' + encodeURIComponent(q);
+    if (campusId) {
+      url += '&campus_id=' + encodeURIComponent(campusId);
+    }
+    fetch(url)
+      .then(function (r) { return r.json(); })
+      .then(function (data) { renderResults(data.results || [], data.hint || ''); })
+      .catch(function () {
+        results.innerHTML = '<div class="sr-empty">Không kết nối được. Thử lại sau.</div>';
+      });
   }
 
-  function renderResults(items) {
+  /* ── Render kết quả ── */
+  function renderResults(items, hint) {
+    lastItems = items;
+
     if (!items.length) {
-      results.innerHTML = '<div class="sr-empty">Không tìm thấy kết quả nào.</div>';
+      results.innerHTML =
+        '<div class="sr-empty">🔎 Không tìm thấy kết quả nào.<br>' +
+        '<small style="color:#9ecbb2">Thử: "WC tầng 1 cơ sở …" hoặc "phòng học A101"</small></div>';
       return;
     }
 
-    // Nhóm kết quả theo type
+    var html = '';
+
+    /* Chip gợi ý filter (khi tìm kiếm kết hợp) */
+    if (hint) {
+      html += '<div style="padding:7px 12px 2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+        '<span style="font-size:10px;font-weight:700;color:#9ecbb2;text-transform:uppercase;letter-spacing:.06em;">Lọc thông minh</span>' +
+        '<span style="display:inline-flex;align-items:center;gap:4px;background:#eef7f1;border:1.5px solid #2f9e63;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700;color:#14532d;">' +
+        '✨ ' + escHtml(hint) + '</span>' +
+        '</div>';
+    }
+
+    /* Nhóm kết quả theo type — thứ tự hiển thị ưu tiên theo độ liên quan thực tế */
     var groups = {};
-    var ORDER  = ['campus','building','floor','room','green','parking','tree'];
+    var typeOrder = [];
     items.forEach(function (it) {
-      if (!groups[it.type]) groups[it.type] = [];
+      if (!groups[it.type]) {
+        groups[it.type] = [];
+        typeOrder.push(it.type);
+      }
       groups[it.type].push(it);
     });
 
-    var html = '';
-    ORDER.forEach(function (type) {
+    /* Tổng số kết quả */
+    html += '<div style="padding:6px 14px 3px;font-size:11px;color:#9ecbb2;border-bottom:1px solid #f0f7f3;">' +
+      '📊 ' + items.length + ' kết quả</div>';
+
+    typeOrder.forEach(function (type) {
       if (!groups[type]) return;
       var sample = groups[type][0];
-      html += '<div class="sr-group-label">' + sample.icon + ' ' + sample.label + '</div>';
+      html += '<div class="sr-group-label">' + sample.icon + ' ' + (TYPE_LABELS[type] || type) + ' (' + groups[type].length + ')</div>';
       groups[type].forEach(function (it) {
         var colors = (BADGE_COLORS[it.type] || '#e2e8f0|#374151').split('|');
-        var sub = it.campus ? '🏫 ' + it.campus : '';
-        if (it.type === 'room')    sub = (ROOM_TYPES[it.room_type] || it.room_type || '') + (it.building_name ? ' · 🏢 ' + it.building_name : '');
-        if (it.type === 'floor')   sub = '🏢 ' + (it.building_name || '') + (it.campus ? ' · ' + it.campus : '');
-        if (it.type === 'tree')    sub = (it.health || '') + (it.campus ? ' · 🏫 ' + it.campus : '');
-        if (it.type === 'green')   sub = (it.detail_type || '') + (it.campus ? ' · 🏫 ' + it.campus : '');
-        if (it.type === 'parking') sub = (it.capacity ? it.capacity + ' xe' : '') + (it.campus ? ' · 🏫 ' + it.campus : '');
+        var sub = buildSubText(it);
+        /* Chỉ số kết quả / tag đặc biệt */
+        var extra = '';
+        if (it.type === 'room' && it.floor_name) {
+          extra = '<span style="display:inline-block;margin-left:5px;font-size:9px;background:#fff7ed;color:#c2410c;border-radius:999px;padding:1px 6px;font-weight:700;">📐 ' + escHtml(it.floor_name) + '</span>';
+        }
         html +=
           '<div class="sr-item" data-idx="' + it.id + '" data-type="' + it.type + '">' +
           '<span class="sr-icon">' + it.icon + '</span>' +
-          '<div>' +
-            '<div class="sr-name">' + it.name +
-              '<span class="sr-badge" style="background:' + colors[0] + ';color:' + colors[1] + '">' + it.label + '</span>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div class="sr-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:3px;">' +
+              '<span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escHtml(it.name) + '</span>' +
+              '<span class="sr-badge" style="background:' + colors[0] + ';color:' + colors[1] + ';flex-shrink:0;">' + (TYPE_LABELS[it.type] || it.label) + '</span>' +
+              extra +
             '</div>' +
             (sub ? '<div class="sr-sub">' + sub + '</div>' : '') +
           '</div></div>';
@@ -1176,11 +1346,11 @@ map.on('click', function() {
 
     results.innerHTML = html;
 
-    // Bind click lên từng item
+    /* Bind click */
     results.querySelectorAll('.sr-item').forEach(function (el) {
       var type = el.dataset.type;
       var idx  = parseInt(el.dataset.idx, 10);
-      var it   = items.find(function(i){ return i.id === idx && i.type === type; });
+      var it   = items.find(function (i) { return i.id === idx && i.type === type; });
       if (!it) return;
       el.addEventListener('click', function () {
         closeResults();
@@ -1191,74 +1361,176 @@ map.on('click', function() {
     });
   }
 
-  /* ── Navigate đến entity khi click kết quả ── */
+  /* ── Build sub text đầy đủ context cho từng loại ── */
+  function buildSubText(it) {
+    var parts = [];
+    switch (it.type) {
+      case 'campus':
+        break;
+      case 'building':
+        if (it.campus) parts.push('🏫 ' + it.campus);
+        break;
+      case 'floor':
+        if (it.building_name) parts.push('🏢 ' + it.building_name);
+        if (it.campus) parts.push('🏫 ' + it.campus);
+        break;
+      case 'room':
+        if (it.room_type_label || it.room_type) parts.push(it.room_type_label || ROOM_TYPES[it.room_type] || it.room_type);
+        if (it.building_name) parts.push('🏢 ' + it.building_name);
+        if (it.campus) parts.push('🏫 ' + it.campus);
+        break;
+      case 'green':
+        if (it.detail_type) parts.push(it.detail_type);
+        if (it.campus) parts.push('🏫 ' + it.campus);
+        break;
+      case 'parking':
+        if (it.capacity) parts.push('🔢 ' + it.capacity + ' xe');
+        if (it.campus) parts.push('🏫 ' + it.campus);
+        break;
+      case 'tree':
+        if (it.health) parts.push(it.health);
+        if (it.campus) parts.push('🏫 ' + it.campus);
+        break;
+    }
+    return parts.join(' · ');
+  }
+
+  function escHtml(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── Navigate đến entity khi click kết quả — kích hoạt chính xác layer trên map ── */
   function navigateTo(it) {
     var latlng = L.latLng(it.lat, it.lng);
 
+    // Đồng bộ dropdown cơ sở
+    if (it.campus_pk || (it.type === 'campus' && it.id)) {
+      var targetCampusPk = it.campus_pk || it.id;
+      var cs = document.getElementById('campus-select');
+      if (cs && cs.querySelector('option[value="'+targetCampusPk+'"]')) {
+        cs.value = String(targetCampusPk);
+      }
+    }
+
     if (it.type === 'campus') {
-      map.flyTo(latlng, 17, { duration: 1.2 });
-      goBrowse();
-      showDetail({
-        type: 'Khuôn viên', badgeClass: 'badge-campus', icon: '🏫',
-        title: it.name, images: it.images || [], meta: []
+      var targetLyr = null;
+      campuses.eachLayer(function(lyr) {
+        var f = lyr.feature;
+        if (String(f.id || f.properties.pk) === String(it.id)) targetLyr = lyr;
       });
+      if (targetLyr) {
+        var bd = targetLyr.getBounds();
+        if (bd && bd.isValid()) map.flyToBounds(bd, { padding:[40,40], maxZoom:18, duration:1.2 });
+        targetLyr.fire('click');
+      } else {
+        map.flyTo(latlng, 17, { duration: 1.2 });
+        goBrowse();
+        showDetail({
+          type: 'Khuôn viên', badgeClass: 'badge-campus', icon: '🏫',
+          title: it.name, images: it.images || [], meta: []
+        });
+      }
 
     } else if (it.type === 'building') {
-      map.flyTo(latlng, 18, { duration: 1.2 });
-      // Tìm feature từ buildingData
-      var feat = null;
-      buildingData.features && buildingData.features.forEach(function(f){
-        if (String(f.id||f.properties.pk) === String(it.id)) feat = f;
+      var targetLyr = null;
+      buildings.eachLayer(function(lyr) {
+        var f = lyr.feature;
+        if (String(f.id || f.properties.pk) === String(it.id)) targetLyr = lyr;
       });
-      var imgs = it.images || [];
-      openBuildingPanel(it.id, it.name, it.campus_pk, feat, imgs);
+      if (targetLyr) {
+        var bd = targetLyr.getBounds();
+        if (bd && bd.isValid()) map.flyToBounds(bd, { padding:[50,50], maxZoom:19, duration:1.2 });
+        targetLyr.fire('click');
+        if (targetLyr._path) { targetLyr._path.focus && targetLyr._path.focus(); }
+      } else {
+        map.flyTo(latlng, 18, { duration: 1.2 });
+        var feat = null;
+        buildingData.features && buildingData.features.forEach(function (f) {
+          if (String(f.id || f.properties.pk) === String(it.id)) feat = f;
+        });
+        openBuildingPanel(it.id, it.name, it.campus_pk, feat, it.images || []);
+      }
 
     } else if (it.type === 'floor') {
       map.flyTo(latlng, 19, { duration: 1.2 });
-      // Mở building panel rồi auto-select tầng đó
       var bldFeat = null;
-      buildingData.features && buildingData.features.forEach(function(f){
-        if (String(f.id||f.properties.pk) === String(it.building_id)) bldFeat = f;
+      buildingData.features && buildingData.features.forEach(function (f) {
+        if (String(f.id || f.properties.pk) === String(it.building_id)) bldFeat = f;
       });
       openBuildingPanel(it.building_id, it.building_name, it.campus_pk, bldFeat, [], it.id, null);
 
     } else if (it.type === 'room') {
       map.flyTo(latlng, 20, { duration: 1.2 });
       var bFeat = null;
-      buildingData.features && buildingData.features.forEach(function(f){
-        if (String(f.id||f.properties.pk) === String(it.building_id)) bFeat = f;
+      buildingData.features && buildingData.features.forEach(function (f) {
+        if (String(f.id || f.properties.pk) === String(it.building_id)) bFeat = f;
       });
       openBuildingPanel(it.building_id, it.building_name, it.campus_pk, bFeat, [], it.floor_id, it.id);
 
     } else if (it.type === 'green') {
-      map.flyTo(latlng, 18, { duration: 1.2 });
-      goBrowse();
-      showDetail({
-        type: 'Mảng xanh', badgeClass: 'badge-green', icon: '🌿',
-        title: it.name, images: it.images || [],
-        meta: [['🌱', 'Loại mảng xanh', it.detail_type], ['🏫', 'Thuộc cơ sở', it.campus]]
+      ensureLayerActive('green');
+      var targetLyr = null;
+      greens.eachLayer(function(lyr) {
+        var f = lyr.feature;
+        if (String(f.id || f.properties.pk) === String(it.id)) targetLyr = lyr;
       });
+      if (targetLyr) {
+        var bd = targetLyr.getBounds();
+        if (bd && bd.isValid()) map.flyToBounds(bd, { padding:[50,50], maxZoom:19, duration:1.2 });
+        targetLyr.fire('click');
+        if (targetLyr._path) { targetLyr._path.focus && targetLyr._path.focus(); }
+      } else {
+        map.flyTo(latlng, 18, { duration: 1.2 });
+        goBrowse();
+        var meta = [['🌱', 'Loại mảng xanh', it.detail_type], ['🏫', 'Thuộc cơ sở', it.campus]];
+        if (it.description) meta.push(['📝', 'Mô tả', it.description]);
+        showDetail({ type: 'Mảng xanh', badgeClass: 'badge-green', icon: '🌿', title: it.name, images: it.images || [], meta: meta });
+      }
 
     } else if (it.type === 'parking') {
-      map.flyTo(latlng, 18, { duration: 1.2 });
-      goBrowse();
-      showDetail({
-        type: 'Bãi xe', badgeClass: 'badge-parking', icon: '🅿️',
-        title: it.name, images: it.images || [],
-        meta: [['🔢', 'Sức chứa', it.capacity ? it.capacity + ' xe' : 'Chưa cập nhật'], ['🏫', 'Thuộc cơ sở', it.campus]]
+      ensureLayerActive('parking');
+      var targetLyr = null;
+      parkings.eachLayer(function(lyr) {
+        var f = lyr.feature;
+        if (String(f.id || f.properties.pk) === String(it.id)) targetLyr = lyr;
       });
+      if (targetLyr) {
+        var bd = targetLyr.getBounds();
+        if (bd && bd.isValid()) map.flyToBounds(bd, { padding:[50,50], maxZoom:19, duration:1.2 });
+        targetLyr.fire('click');
+        if (targetLyr._path) { targetLyr._path.focus && targetLyr._path.focus(); }
+      } else {
+        map.flyTo(latlng, 18, { duration: 1.2 });
+        goBrowse();
+        var meta = [
+          ['🔢', 'Sức chứa', it.capacity ? it.capacity + ' xe' : 'Chưa cập nhật'],
+          ['🏫', 'Thuộc cơ sở', it.campus]
+        ];
+        if (it.description) meta.push(['📝', 'Mô tả', it.description]);
+        showDetail({ type: 'Bãi xe', badgeClass: 'badge-parking', icon: '🅿️', title: it.name, images: it.images || [], meta: meta });
+      }
 
     } else if (it.type === 'tree') {
-      map.flyTo(latlng, 20, { duration: 1.2 });
-      goBrowse();
-      showDetail({
-        type: 'Cây xanh', badgeClass: 'badge-tree', icon: '🌳',
-        title: it.name, images: it.images || [],
-        meta: [['💚', 'Tình trạng', it.health], ['🏫', 'Thuộc cơ sở', it.campus]]
+      ensureLayerActive('tree');
+      var targetLyr = null;
+      trees.eachLayer(function(lyr) {
+        var f = lyr.feature;
+        if (String(f.id || f.properties.pk) === String(it.id)) targetLyr = lyr;
       });
+      if (targetLyr) {
+        map.flyTo(targetLyr.getLatLng(), 20, { duration: 1.2 });
+        targetLyr.fire('click');
+        if (targetLyr._path) { targetLyr._path.focus && targetLyr._path.focus(); }
+        targetLyr.openTooltip && targetLyr.openTooltip();
+      } else {
+        map.flyTo(latlng, 20, { duration: 1.2 });
+        goBrowse();
+        var meta = [['💚', 'Tình trạng', it.health], ['🏫', 'Thuộc cơ sở', it.campus]];
+        if (it.description) meta.push(['📝', 'Mô tả', it.description]);
+        showDetail({ type: 'Cây xanh', badgeClass: 'badge-tree', icon: '🌳', title: it.name, images: it.images || [], meta: meta });
+      }
     }
 
-    // Mở sidebar nếu đang ẩn (mobile)
     document.getElementById('sidebar').classList.add('open');
   }
 })();

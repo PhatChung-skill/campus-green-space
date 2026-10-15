@@ -198,12 +198,13 @@ class RoomForm(GeomModelForm):
 
     class Meta:
         model = Room
-        fields = ["floor", "name", "room_type", "image_1", "image_2", "image_3"]
+        fields = ["floor", "name", "room_type", "description", "image_1", "image_2", "image_3"]
         labels = IMAGE_LABELS
         widgets = {
             "floor": forms.Select(attrs=SELECT_CLASS),
             "name": forms.TextInput(attrs=INPUT_CLASS),
             "room_type": forms.Select(attrs=SELECT_CLASS),
+            "description": forms.Textarea(attrs={**TEXTAREA_CLASS, "placeholder": "Mô tả thêm về phòng này…"}),
             "image_1": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
             "image_2": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
             "image_3": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
@@ -250,16 +251,25 @@ class ParkingAreaForm(GeomModelForm):
 
     class Meta:
         model = ParkingArea
-        fields = ["campus", "name", "capacity", "image_1", "image_2", "image_3"]
+        fields = ["campus", "name", "capacity", "description", "image_1", "image_2", "image_3"]
         labels = IMAGE_LABELS
         widgets = {
             "campus": forms.Select(attrs=SELECT_CLASS),
             "name": forms.TextInput(attrs=INPUT_CLASS),
             "capacity": forms.NumberInput(attrs={**INPUT_CLASS, "min": "0"}),
+            "description": forms.Textarea(attrs={**TEXTAREA_CLASS, "placeholder": "Mô tả thêm về bãi xe này…"}),
             "image_1": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
             "image_2": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
             "image_3": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
         }
+
+    def clean_capacity(self):
+        capacity = self.cleaned_data.get("capacity")
+        if capacity is not None and capacity < 0:
+            raise forms.ValidationError(
+                "Sức chứa không được là số âm. Vui lòng nhập số từ 0 trở lên."
+            )
+        return capacity
 
     def clean(self):
         cleaned_data = super().clean()
@@ -282,12 +292,13 @@ class GreenAreaForm(GeomModelForm):
 
     class Meta:
         model = GreenArea
-        fields = ["campus", "name", "type", "image_1", "image_2", "image_3"]
+        fields = ["campus", "name", "type", "description", "image_1", "image_2", "image_3"]
         labels = IMAGE_LABELS
         widgets = {
             "campus": forms.Select(attrs=SELECT_CLASS),
             "name": forms.TextInput(attrs=INPUT_CLASS),
             "type": forms.Select(attrs=SELECT_CLASS),
+            "description": forms.Textarea(attrs={**TEXTAREA_CLASS, "placeholder": "Mô tả thêm về khu vực xanh này…"}),
             "image_1": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
             "image_2": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
             "image_3": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
@@ -314,12 +325,13 @@ class TreeForm(GeomModelForm):
 
     class Meta:
         model = Tree
-        fields = ["campus", "species", "health_status", "image_1", "image_2", "image_3"]
+        fields = ["campus", "species", "health_status", "description", "image_1", "image_2", "image_3"]
         labels = IMAGE_LABELS
         widgets = {
             "campus": forms.Select(attrs=SELECT_CLASS),
             "species": forms.TextInput(attrs=INPUT_CLASS),
             "health_status": forms.Select(attrs=SELECT_CLASS),
+            "description": forms.Textarea(attrs={**TEXTAREA_CLASS, "placeholder": "Mô tả thêm về cây này…"}),
             "image_1": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
             "image_2": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
             "image_3": forms.ClearableFileInput(attrs=IMAGE_WIDGET),

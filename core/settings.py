@@ -114,7 +114,7 @@ import os
 # Cấu hình đường dẫn thư viện GIS cho Windows
 if os.name == 'nt':
     # Đường dẫn cài đặt OSGeo4W 
-    OSGEO4W_ROOT = r"C:\Users\ACER\AppData\Local\Programs\OSGeo4W"
+    OSGEO4W_ROOT = r"C:\OSGeo4W"
     
     # Cài đặt các biến môi trường để Django biết chỗ tìm dữ liệu
     os.environ['OSGEO4W_ROOT'] = OSGEO4W_ROOT
@@ -124,7 +124,7 @@ if os.name == 'nt':
 
     # === QUAN TRỌNG NHẤT ===
     # Thay 'gdal312.dll' thành đúng tên file bạn đã tìm thấy ở Bước 2
-    GDAL_LIBRARY_PATH = OSGEO4W_ROOT + r"\bin\gdal312.dll" 
+    GDAL_LIBRARY_PATH = OSGEO4W_ROOT + r"\bin\gdal313.dll" 
     GEOS_LIBRARY_PATH = OSGEO4W_ROOT + r"\bin\geos_c.dll"
 
 

@@ -192,8 +192,9 @@ def entity_context_geojson(request, entity):
     elif entity == "mang-xanh":
         if campus_id:
             layers["campus"]   = to_geojson(Campus.objects.filter(pk=campus_id),              ["name"])
-            layers["greens"]   = to_geojson(GreenArea.objects.filter(campus_id=campus_id),    ["name"])
             layers["buildings"]= to_geojson(Building.objects.filter(campus_id=campus_id),     ["name"])
+            layers["parkings"] = to_geojson(ParkingArea.objects.filter(campus_id=campus_id),  ["name"])
+            layers["greens"]   = to_geojson(GreenArea.objects.filter(campus_id=campus_id),    ["name"])
 
     elif entity == "cay-xanh":
         if campus_id:
