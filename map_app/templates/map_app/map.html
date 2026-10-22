@@ -158,6 +158,12 @@ html,body{height:100%;overflow:hidden;font-family:"Be Vietnam Pro","Segoe UI",sa
   #sidebar{position:absolute;left:0;top:0;height:100%;transform:translateX(-100%);z-index:900}
   #sidebar.open{transform:none;box-shadow:4px 0 24px rgba(0,0,0,.2)}
   #map-wrap{width:100%}
+  #stats-panel {
+    width: calc(100vw - 32px);
+    right: 16px;
+    bottom: 72px;
+    max-height: calc(100vh - 190px);
+  }
 }
 
 /* ══ LIGHTBOX ══ */
@@ -260,7 +266,229 @@ html,body{height:100%;overflow:hidden;font-family:"Be Vietnam Pro","Segoe UI",sa
   outline: 2px solid #000000 !important;
   outline-offset: 2px !important;
 }
+
+/* ══ STATS PANEL ══ */
+#stats-toggle-btn {
+  position: absolute;
+  bottom: 24px;
+  right: 16px;
+  z-index: 700;
+  background: linear-gradient(135deg,#0b3d2e,#1f7a4d);
+  color: #bbf7d0;
+  border: 0;
+  border-radius: 50px;
+  padding: 10px 18px 10px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  box-shadow: 0 4px 18px rgba(11,61,46,.35);
+  transition: transform .15s, box-shadow .15s;
+}
+#stats-toggle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(11,61,46,.45);
+}
+
+#stats-panel {
+  position: absolute;
+  bottom: 72px;
+  right: 16px;
+  z-index: 700;
+  width: 350px;
+  max-height: min(580px, calc(100vh - 190px));
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 8px 36px rgba(11,61,46,.22);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: "Be Vietnam Pro","Segoe UI",sans-serif;
+  border: 1.5px solid #cde5d6;
+}
+#stats-panel.open { display: flex; }
+
+.sp-header {
+  background: linear-gradient(135deg,#0b3d2e,#1f7a4d);
+  color: #edf8f1;
+  padding: 14px 16px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.sp-header-title {
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.sp-close {
+  background: rgba(255,255,255,.15);
+  border: 0;
+  border-radius: 50%;
+  width: 28px; height: 28px;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.sp-close:hover { background: rgba(255,255,255,.3); }
+
+.sp-body {
+  overflow-y: auto;
+  padding: 16px;
+  flex: 1;
+}
+
+/* Campus filter */
+.sp-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.sp-filter label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #5c7468;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  flex-shrink: 0;
+}
+#sp-campus-select {
+  flex: 1;
+  border: 1.5px solid #cde5d6;
+  border-radius: 10px;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 12px;
+  color: #0b3d2e;
+  background: #f7fbf8;
+  cursor: pointer;
+  outline: none;
+}
+#sp-campus-select:focus { border-color: #2f9e63; }
+
+/* Chart container */
+.sp-chart-wrap {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  margin: 0 auto 14px;
+}
+#sp-chart { width: 100% !important; height: 100% !important; }
+
+/* Evaluation badge */
+.sp-eval {
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+.sp-eval.good    { background: #dcfce7; color: #15803d; }
+.sp-eval.warning { background: #fef9c3; color: #854d0e; }
+.sp-eval.bad     { background: #fee2e2; color: #991b1b; }
+
+/* Stats rows */
+.sp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #e8f4ed;
+  font-size: 12.5px;
+}
+.sp-row:last-child { border-bottom: 0; }
+.sp-row-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sp-dot {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.sp-row-label { color: #3d6b58; font-weight: 600; }
+.sp-row-right { text-align: right; }
+.sp-row-m2  { font-size: 11px; color: #5c7468; }
+.sp-row-pct { font-size: 14px; font-weight: 700; color: #0b3d2e; }
+
+/* Loading / error */
+.sp-msg {
+  text-align: center;
+  padding: 24px 12px;
+  color: #5c7468;
+  font-size: 13px;
+}
+
+.sp-divider {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ecbb2;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin: 14px 0 8px;
+}
+
+/* Tree stats card */
+.sp-tree-card {
+  background: linear-gradient(135deg, #f0fdf4 0%, #e8f9ee 100%);
+  border: 1.5px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sp-tree-icon {
+  font-size: 26px;
+  flex-shrink: 0;
+}
+.sp-tree-info {
+  flex: 1;
+  min-width: 0;
+}
+.sp-tree-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+.sp-tree-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #15803d;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.sp-tree-count {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0b3d2e;
+}
+.sp-tree-sub {
+  font-size: 11px;
+  color: #166534;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+.sp-tree-sep { color: #86efac; font-weight: bold; }
+
     </style>
+
 </head>
 <body>
 <div id="app">
@@ -410,6 +638,35 @@ html,body{height:100%;overflow:hidden;font-family:"Be Vietnam Pro","Segoe UI",sa
 <div id="map-wrap">
   <button id="sidebar-toggle" onclick="toggleSidebar()">☰ Menu</button>
   <div id="map"></div>
+
+  <!-- ════ STATS TOGGLE BUTTON ════ -->
+  <button id="stats-toggle-btn" title="Thống kê không gian xanh">
+    📊 Thống kê xanh
+  </button>
+
+  <!-- ════ STATS PANEL ════ -->
+  <div id="stats-panel" role="dialog" aria-label="Thống kê không gian xanh">
+    <div class="sp-header">
+      <div class="sp-header-title">📊 Thống kê không gian xanh</div>
+      <button class="sp-close" id="sp-close-btn" title="Đóng">✕</button>
+    </div>
+    <div class="sp-body">
+
+      <!-- Bộ lọc cơ sở -->
+      <div class="sp-filter">
+        <label for="sp-campus-select">🏫 Cơ sở</label>
+        <select id="sp-campus-select">
+          <option value="">— Tổng hợp tất cả —</option>
+        </select>
+      </div>
+
+      <!-- Nội dung thống kê (render bằng JS) -->
+      <div id="sp-content">
+        <div class="sp-msg">⏳ Đang tải dữ liệu…</div>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 </div><!-- #app -->
@@ -1636,6 +1893,305 @@ map.on('click', function() {
 
   /* Bind ảnh đã có sẵn khi load trang */
   document.querySelectorAll('img').forEach(bindImgClick);
+})();
+</script>
+
+<!-- ════════════════════════════════════════
+     CHART.JS — Statistics Panel
+════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ── URL API ── */
+  var API_STATS = '{% url "green_space_stats" %}';
+
+  /* ── DOM refs ── */
+  var panel      = document.getElementById('stats-panel');
+  var toggleBtn  = document.getElementById('stats-toggle-btn');
+  var closeBtn   = document.getElementById('sp-close-btn');
+  var campusSel  = document.getElementById('sp-campus-select');
+  var content    = document.getElementById('sp-content');
+
+  /* ── Chart.js instance ── */
+  var spChart = null;
+
+  /* ── Màu biểu đồ ── */
+  var COLORS = {
+    green:    '#22c55e',
+    building: '#fbbf24',
+    yard:     '#94a3b8',
+  };
+  var COLORS_BG = {
+    green:    'rgba(34,197,94,.15)',
+    building: 'rgba(251,191,36,.15)',
+    yard:     'rgba(148,163,184,.15)',
+  };
+
+  /* ─────────────────────────────
+     Mở / đóng panel
+  ───────────────────────────── */
+  toggleBtn.addEventListener('click', function () {
+    panel.classList.toggle('open');
+    if (panel.classList.contains('open')) {
+      loadStats();
+    }
+  });
+  closeBtn.addEventListener('click', function () {
+    panel.classList.remove('open');
+  });
+
+  /* ─────────────────────────────
+     Đồng bộ dropdown cơ sở với campus-select chính
+  ───────────────────────────── */
+  function syncCampusOptions() {
+    var mainSelect = document.getElementById('campus-select');
+    if (!mainSelect) return;
+    // Đợi đến khi campus-select được populate (do JS async)
+    var observer = new MutationObserver(function () {
+      buildCampusFilter(mainSelect);
+    });
+    observer.observe(mainSelect, { childList: true });
+    // Nếu đã populate rồi thì chạy ngay
+    if (mainSelect.options.length > 1) buildCampusFilter(mainSelect);
+  }
+
+  function buildCampusFilter(mainSel) {
+    campusSel.innerHTML = '<option value="">— Tổng hợp tất cả —</option>';
+    Array.from(mainSel.options).forEach(function (opt) {
+      if (!opt.value) return;
+      var o = document.createElement('option');
+      o.value = opt.value;
+      o.textContent = opt.textContent.replace('🏫 ', '');
+      campusSel.appendChild(o);
+    });
+  }
+
+  campusSel.addEventListener('change', function () {
+    loadStats();
+  });
+
+  /* ─────────────────────────────
+     AJAX: Gọi API thống kê
+  ───────────────────────────── */
+  function loadStats() {
+    var cid = campusSel.value;
+    var url = API_STATS + (cid ? '?campus_id=' + encodeURIComponent(cid) : '');
+
+    content.innerHTML = '<div class="sp-msg">⏳ Đang tính toán…</div>';
+
+    fetch(url)
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        renderStats(data);
+      })
+      .catch(function (err) {
+        content.innerHTML = '<div class="sp-msg">❌ Không thể tải dữ liệu.<br><small>' + err.message + '</small></div>';
+      });
+  }
+
+  /* ─────────────────────────────
+     Format diện tích trực quan & song song:
+     - val < 10.000 m²: Hiển thị m² (vd: 2.037 m²)
+     - val >= 10.000 m²: Hiển thị cả ha và m² (vd: 25,83 ha (258.300 m²))
+  ───────────────────────────── */
+  function fmtArea(val) {
+    if (!val && val !== 0) return '0 m²';
+    var m2Str = Math.round(val).toLocaleString('vi-VN') + ' m²';
+    if (val >= 10000) {
+      var haStr = (val / 10000).toFixed(2).replace('.', ',') + ' ha';
+      return haStr + ' (' + m2Str + ')';
+    }
+    return m2Str;
+  }
+
+  function renderStats(d) {
+    var campusName = campusSel.value
+      ? campusSel.options[campusSel.selectedIndex].textContent
+      : 'Tất cả cơ sở';
+
+    /* Biểu đồ vành khăn */
+    var chartHtml = '<div class="sp-chart-wrap"><canvas id="sp-chart"></canvas></div>';
+
+    /* Đánh giá */
+    var evalHtml = '<div class="sp-eval ' + (d.eval_level || 'bad') + '">' + escHtml(d.evaluation || '') + '</div>';
+
+    /* Tổng diện tích khuôn viên (hiển thị song song ha và m² nếu diện tích lớn) */
+    var isBigCampus = d.campus_area >= 10000;
+    var totalPrimary = isBigCampus
+      ? (d.campus_area / 10000).toFixed(2).replace('.', ',') + ' ha'
+      : Math.round(d.campus_area).toLocaleString('vi-VN') + ' m²';
+    var totalSecondary = isBigCampus
+      ? Math.round(d.campus_area).toLocaleString('vi-VN') + ' m² · 100%'
+      : '100%';
+
+    var totalHtml = [
+      '<div class="sp-row">',
+      '  <div class="sp-row-left">',
+      '    <div class="sp-dot" style="background:#0b3d2e"></div>',
+      '    <span class="sp-row-label">Tổng khuôn viên</span>',
+      '  </div>',
+      '  <div class="sp-row-right">',
+      '    <div class="sp-row-pct">' + totalPrimary + '</div>',
+      '    <div class="sp-row-m2">' + totalSecondary + '</div>',
+      '  </div>',
+      '</div>',
+    ].join('');
+
+    /* 3 dòng thành phần (Mảng xanh, Công trình, Sân/Bãi) */
+    var rows = [
+      { label: '🌿 Mảng xanh',     color: COLORS.green,    m2: d.green_area,    pct: d.green_pct },
+      { label: '🏢 Công trình XD',  color: COLORS.building, m2: d.building_area, pct: d.building_pct },
+      { label: '☀️ Sân / Bãi',      color: COLORS.yard,     m2: d.yard_area,     pct: d.yard_pct },
+    ];
+    var rowsHtml = rows.map(function (r) {
+      var areaLabel = r.m2 >= 10000
+        ? (r.m2 / 10000).toFixed(2).replace('.', ',') + ' ha (' + Math.round(r.m2).toLocaleString('vi-VN') + ' m²)'
+        : Math.round(r.m2).toLocaleString('vi-VN') + ' m²';
+      return [
+        '<div class="sp-row">',
+        '  <div class="sp-row-left">',
+        '    <div class="sp-dot" style="background:' + r.color + '"></div>',
+        '    <span class="sp-row-label">' + r.label + '</span>',
+        '  </div>',
+        '  <div class="sp-row-right">',
+        '    <div class="sp-row-pct">' + r.pct + '%</div>',
+        '    <div class="sp-row-m2">' + areaLabel + '</div>',
+        '  </div>',
+        '</div>',
+      ].join('');
+    }).join('');
+
+    /* Thẻ thống kê cây xanh */
+    var treeHtml = '';
+    if (d.trees) {
+      treeHtml = [
+        '<div class="sp-tree-card">',
+        '  <div class="sp-tree-icon">🌳</div>',
+        '  <div class="sp-tree-info">',
+        '    <div class="sp-tree-top">',
+        '      <span class="sp-tree-title">Cây xanh bóng mát</span>',
+        '      <span class="sp-tree-count">' + (d.trees.total || 0) + ' cây</span>',
+        '    </div>',
+        '    <div class="sp-tree-sub">',
+        '      <span>✅ ' + (d.trees.good || 0) + ' tốt</span>',
+        '      <span class="sp-tree-sep">·</span>',
+        '      <span>⚠️ ' + (d.trees.needs_care || 0) + ' cần chăm sóc</span>',
+        '    </div>',
+        '  </div>',
+        '</div>',
+      ].join('');
+    }
+
+    /* Breakdown từng cơ sở (chỉ hiện khi chọn "Tổng hợp") */
+    var breakdownHtml = '';
+    if (!campusSel.value && d.campuses && d.campuses.length > 0) {
+      breakdownHtml += '<div class="sp-divider">📋 Chi tiết từng cơ sở</div>';
+      d.campuses.forEach(function (c) {
+        var cAreaGreen = c.green_area >= 10000
+          ? (c.green_area / 10000).toFixed(2).replace('.', ',') + ' ha (' + Math.round(c.green_area).toLocaleString('vi-VN') + ' m²)'
+          : Math.round(c.green_area).toLocaleString('vi-VN') + ' m²';
+        var cAreaBld = c.building_area >= 10000
+          ? (c.building_area / 10000).toFixed(2).replace('.', ',') + ' ha (' + Math.round(c.building_area).toLocaleString('vi-VN') + ' m²)'
+          : Math.round(c.building_area).toLocaleString('vi-VN') + ' m²';
+        var cAreaYard = c.yard_area >= 10000
+          ? (c.yard_area / 10000).toFixed(2).replace('.', ',') + ' ha (' + Math.round(c.yard_area).toLocaleString('vi-VN') + ' m²)'
+          : Math.round(c.yard_area).toLocaleString('vi-VN') + ' m²';
+
+        var cTreeText = c.trees
+          ? '<br>🌳 Cây xanh: <b>' + (c.trees.total || 0) + ' cây</b> (' + (c.trees.good || 0) + ' tốt · ' + (c.trees.needs_care || 0) + ' cần tỉa)'
+          : '';
+
+        breakdownHtml += [
+          '<div style="background:#f7fbf8;border:1.5px solid #e2f0e9;border-radius:10px;padding:10px 12px;margin-bottom:8px">',
+          '  <div style="font-size:12px;font-weight:700;color:#0b3d2e;margin-bottom:6px">🏫 ' + escHtml(c.name) + ' (' + fmtArea(c.campus_area) + ')</div>',
+          '  <div style="font-size:11.5px;color:#3d6b58;line-height:1.8">',
+          '    🌿 Xanh: <b>' + c.green_pct + '%</b> (' + cAreaGreen + ')<br>',
+          '    🏢 XD: <b>' + c.building_pct + '%</b> (' + cAreaBld + ')<br>',
+          '    ☀️ Sân: <b>' + c.yard_pct + '%</b> (' + cAreaYard + ')' + cTreeText,
+          '  </div>',
+          '</div>',
+        ].join('');
+      });
+    }
+
+    /* Render toàn bộ nội dung */
+    content.innerHTML = chartHtml + evalHtml + totalHtml + rowsHtml + treeHtml + breakdownHtml;
+
+    /* Vẽ Chart.js Doughnut */
+    var ctx = document.getElementById('sp-chart').getContext('2d');
+    if (spChart) spChart.destroy();
+
+    /* Nếu không có dữ liệu diện tích thì hiện placeholder */
+    var totalData = d.green_area + d.building_area + d.yard_area;
+    var chartData, chartLabels, chartColors;
+    if (totalData <= 0) {
+      chartData   = [1];
+      chartLabels = ['Chưa có dữ liệu'];
+      chartColors = ['#e2e8f0'];
+    } else {
+      chartData   = [d.green_area, d.building_area, d.yard_area];
+      chartLabels = ['Mảng xanh', 'Công trình XD', 'Sân / Bãi'];
+      chartColors = [COLORS.green, COLORS.building, COLORS.yard];
+    }
+
+    spChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: chartLabels,
+        datasets: [{
+          data: chartData,
+          backgroundColor: chartColors,
+          borderColor: 'white',
+          borderWidth: 3,
+          hoverOffset: 8,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '62%',
+        animation: { duration: 600, easing: 'easeInOutQuart' },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) {
+                var lbl = ctx.label || '';
+                var val = ctx.parsed;
+                var total = ctx.dataset.data.reduce(function (a, b) { return a + b; }, 0);
+                var pct = total > 0 ? (val / total * 100).toFixed(1) : '0';
+                var valStr = val >= 10000
+                  ? (val / 10000).toFixed(2).replace('.', ',') + ' ha (' + Math.round(val).toLocaleString('vi-VN') + ' m²)'
+                  : Math.round(val).toLocaleString('vi-VN') + ' m²';
+                return ' ' + lbl + ': ' + pct + '% · ' + valStr;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function escHtml(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  /* ─────────────────────────────
+     Khởi tạo khi trang load xong
+  ───────────────────────────── */
+  document.addEventListener('DOMContentLoaded', function () {
+    syncCampusOptions();
+  });
+  // Nếu DOMContentLoaded đã xảy ra trước khi script chạy
+  if (document.readyState !== 'loading') {
+    syncCampusOptions();
+  }
+
 })();
 </script>
 </body>

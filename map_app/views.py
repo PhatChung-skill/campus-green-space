@@ -640,3 +640,123 @@ def map_search(request):
     return JsonResponse({"results": results, "hint": hint_str})
 
 
+
+
+# ─────────────────────────────────────────────────────────────────
+# THỐNG KÊ KHÔNG GIAN XANH — Green Space Analytics API
+# Tính diện tích chính xác bằng cách chuyển hệ tọa độ sang UTM 48N
+# (EPSG:32648) phù hợp Việt Nam trước khi gọi hàm tính diện tích
+# của PostGIS, đơn vị kết quả: mét vuông (m²).
+# ─────────────────────────────────────────────────────────────────
+
+from django.contrib.gis.db.models.functions import Area, Transform
+from django.db.models import Sum as _Sum
+
+
+def _total_area_m2(qs, geom_field="geom"):
+    """Tổng diện tích (m²) của queryset sau khi chuyển sang EPSG:32648."""
+    result = qs.annotate(
+        area_m2=Area(Transform(geom_field, 32648))
+    ).aggregate(total=_Sum("area_m2"))
+    val = result.get("total")
+    if val is None:
+        return 0.0
+    # Area() trả về đối tượng có thuộc tính .sq_m (mét vuông)
+    return float(val.sq_m) if hasattr(val, "sq_m") else float(val)
+
+
+def _pct(part, total):
+    if total <= 0:
+        return 0.0
+    return round(part / total * 100, 2)
+
+
+def green_space_stats(request):
+    """
+    GET /api/thong-ke-xanh/?campus_id=<pk>
+
+    Trả về JSON thống kê diện tích khuôn viên / mảng xanh / tòa nhà.
+    Nếu không truyền campus_id thì thống kê tổng hợp tất cả cơ sở.
+    """
+    campus_id = request.GET.get("campus_id")
+
+    if campus_id:
+        campus_qs   = Campus.objects.filter(pk=campus_id)
+        building_qs = Building.objects.filter(campus_id=campus_id)
+        green_qs    = GreenArea.objects.filter(campus_id=campus_id)
+        tree_qs     = Tree.objects.filter(campus_id=campus_id)
+    else:
+        campus_qs   = Campus.objects.all()
+        building_qs = Building.objects.all()
+        green_qs    = GreenArea.objects.all()
+        tree_qs     = Tree.objects.all()
+
+    campus_area   = _total_area_m2(campus_qs)
+    building_area = _total_area_m2(building_qs)
+    green_area    = _total_area_m2(green_qs)
+    yard_area     = max(0.0, campus_area - building_area - green_area)
+
+    green_pct    = _pct(green_area,    campus_area)
+    building_pct = _pct(building_area, campus_area)
+    yard_pct     = _pct(yard_area,     campus_area)
+
+    # Thống kê số lượng cây xanh
+    total_trees = tree_qs.count()
+    good_trees  = tree_qs.filter(health_status="good").count()
+    care_trees  = tree_qs.filter(health_status="needs_care").count()
+
+    # Đánh giá tự động theo ngưỡng 30%
+    threshold_good = 30
+    threshold_warn = 15
+    if green_pct >= threshold_good:
+        evaluation = "✅ Tỷ lệ không gian xanh đạt chuẩn (≥ 30%)"
+        eval_level = "good"
+    elif green_pct >= threshold_warn:
+        evaluation = "⚠️ Tỷ lệ khá thấp, cần bổ sung thêm mảng xanh"
+        eval_level = "warning"
+    else:
+        evaluation = "🔴 Tỷ lệ thấp, cần quy hoạch bổ sung không gian xanh"
+        eval_level = "bad"
+
+    # Chi tiết từng cơ sở
+    campuses_data = []
+    for c in campus_qs.order_by("name"):
+        ca = _total_area_m2(Campus.objects.filter(pk=c.pk))
+        ba = _total_area_m2(Building.objects.filter(campus=c))
+        ga = _total_area_m2(GreenArea.objects.filter(campus=c))
+        ya = max(0.0, ca - ba - ga)
+        c_trees = Tree.objects.filter(campus=c)
+        campuses_data.append({
+            "id":           c.pk,
+            "name":         c.name,
+            "campus_area":  round(ca, 2),
+            "green_area":   round(ga, 2),
+            "building_area":round(ba, 2),
+            "yard_area":    round(ya, 2),
+            "green_pct":    _pct(ga, ca),
+            "building_pct": _pct(ba, ca),
+            "yard_pct":     _pct(ya, ca),
+            "trees": {
+                "total": c_trees.count(),
+                "good": c_trees.filter(health_status="good").count(),
+                "needs_care": c_trees.filter(health_status="needs_care").count(),
+            },
+        })
+
+    return JsonResponse({
+        "campus_area":   round(campus_area, 2),
+        "green_area":    round(green_area, 2),
+        "building_area": round(building_area, 2),
+        "yard_area":     round(yard_area, 2),
+        "green_pct":     green_pct,
+        "building_pct":  building_pct,
+        "yard_pct":      yard_pct,
+        "evaluation":    evaluation,
+        "eval_level":    eval_level,
+        "trees": {
+            "total": total_trees,
+            "good": good_trees,
+            "needs_care": care_trees,
+        },
+        "campuses":      campuses_data,
+    })
