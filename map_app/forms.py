@@ -3,12 +3,15 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.exceptions import ValidationError
+from django.db import transaction
 
 from .models import (
     Building,
     Campus,
     Floor,
     GreenArea,
+    HomepageBlock,
+    HomepageFeatureGroup,
     ParkingArea,
     Role,
     Room,
@@ -35,6 +38,94 @@ class PortalLoginForm(AuthenticationForm):
         self.fields["password"].widget.attrs.update({**INPUT_CLASS, "placeholder": "Mật khẩu"})
         self.fields["username"].label = "Tên đăng nhập"
         self.fields["password"].label = "Mật khẩu"
+
+
+class HomepageBlockForm(forms.ModelForm):
+    FIELDS_BY_KIND = {
+        "header": ("title", "body", "image", "image_alt", "sort_order", "is_active"),
+        "hero": ("eyebrow", "title", "body", "image", "image_alt", "button_label", "button_url", "sort_order", "is_active"),
+        "intro": ("eyebrow", "title", "body", "image", "image_alt", "sort_order", "is_active"),
+        "feature": ("group_title", "title", "body", "image", "image_alt", "button_label", "button_url", "sort_order", "is_active"),
+        "footer": ("title", "body", "button_label", "button_url", "sort_order", "is_active"),
+    }
+
+    def __init__(self, *args, kind=None, **kwargs):
+        instance = kwargs.get("instance")
+        super().__init__(*args, **kwargs)
+        kind = kind or getattr(instance, "kind", None)
+        if kind in self.FIELDS_BY_KIND:
+            field_names = self.FIELDS_BY_KIND[kind]
+            self.fields = {name: self.fields[name] for name in field_names if name != "group_title"}
+            if kind == HomepageBlock.Kind.FEATURE:
+                group_title = forms.CharField(
+                    label="Tiêu đề nhóm tiện ích",
+                    max_length=220,
+                    help_text="Nhập tên nhóm đã có để thêm thẻ vào nhóm đó. Đổi tên tại đây sẽ cập nhật tên cho tất cả thẻ cùng nhóm.",
+                    widget=forms.TextInput(attrs={**INPUT_CLASS, "placeholder": "Ví dụ: Khám phá tiện ích trong khuôn viên"}),
+                )
+                current_group = getattr(instance, "feature_group", None)
+                if current_group:
+                    group_title.initial = current_group.title
+                else:
+                    previous_group = HomepageFeatureGroup.objects.order_by("sort_order", "pk").first()
+                    group_title.initial = previous_group.title if previous_group else "Khám phá tiện ích trong khuôn viên"
+                self.fields = {"group_title": group_title, **self.fields}
+            if kind and not self.instance.pk:
+                self.instance.kind = kind
+
+    def clean_group_title(self):
+        title = self.cleaned_data.get("group_title", "").strip()
+        current_group = getattr(self.instance, "feature_group", None)
+        duplicate = HomepageFeatureGroup.objects.filter(title__iexact=title)
+        if current_group:
+            duplicate = duplicate.exclude(pk=current_group.pk)
+        if current_group and title and duplicate.exists():
+            raise ValidationError("Tên này đã được dùng bởi một nhóm khác. Hãy dùng đúng tên nhóm đó hoặc chọn tên mới.")
+        return title
+
+    def save(self, commit=True):
+        block = super().save(commit=False)
+        if block.kind == HomepageBlock.Kind.FEATURE:
+            title = self.cleaned_data["group_title"]
+            current_group = getattr(self.instance, "feature_group", None)
+            if commit:
+                with transaction.atomic():
+                    if current_group:
+                        current_group.title = title
+                        current_group.save()
+                        group = current_group
+                    else:
+                        group = HomepageFeatureGroup.objects.filter(title__iexact=title).first()
+                        if group is None:
+                            group = HomepageFeatureGroup.objects.create(title=title)
+                    block.feature_group = group
+                    block.save()
+                return block
+            if current_group:
+                block.feature_group = current_group
+            else:
+                block._pending_feature_group_title = title
+        if commit:
+            block.save()
+        return block
+
+    class Meta:
+        model = HomepageBlock
+        fields = [
+            "eyebrow", "title", "body", "image", "image_alt",
+            "button_label", "button_url", "sort_order", "is_active",
+        ]
+        widgets = {
+            "eyebrow": forms.TextInput(attrs=INPUT_CLASS),
+            "title": forms.TextInput(attrs=INPUT_CLASS),
+            "body": forms.Textarea(attrs={**TEXTAREA_CLASS, "rows": 5}),
+            "image": forms.ClearableFileInput(attrs=IMAGE_WIDGET),
+            "image_alt": forms.TextInput(attrs=INPUT_CLASS),
+            "button_label": forms.TextInput(attrs=INPUT_CLASS),
+            "button_url": forms.TextInput(attrs=INPUT_CLASS),
+            "sort_order": forms.NumberInput(attrs=INPUT_CLASS),
+            "is_active": forms.CheckboxInput(attrs=CHECK_CLASS),
+        }
 
 
 class GeomModelForm(forms.ModelForm):

@@ -8,28 +8,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'map_app/css/portal.css' %}">
+    <link rel="stylesheet" href="{% static 'map_app/css/site-nav.css' %}">
     {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body class="portal-shell-page">
+{% include "map_app/_site_nav.html" %}
 <div class="shell">
     <aside class="sidebar">
-        <div class="brand">
-            <div class="brand-mark">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M12 3c2.8 3.2 8 6.2 8 11.2A8 8 0 1 1 4 14.2C4 9.2 9.2 6.2 12 3Z" fill="#bbf7d0"/>
-                </svg>
-            </div>
-            <div>
-                <h1>Cổng không gian xanh</h1>
-                <p>HCMUNRE · Trang quản lý</p>
-            </div>
-        </div>
-
         <nav class="nav">
             <div class="nav-group">
                 <p class="nav-label">Tổng quan</p>
                 <a href="{% url 'portal_home' %}" class="{% if request.resolver_match.url_name == 'portal_home' %}is-active{% endif %}">Bảng điều khiển</a>
                 <a href="{% url 'map_view' %}">Bản đồ công khai</a>
+                {% if is_admin_role %}<a href="{% url 'homepage_content' %}" class="{% if 'homepage' in request.resolver_match.url_name %}is-active{% endif %}">Nội dung trang chủ</a>{% endif %}
             </div>
             {% if nav_perms.users or nav_perms.roles %}
             <div class="nav-group">
@@ -67,13 +58,6 @@
                     <h2 class="topbar-title">{% block heading %}Quản lý{% endblock %}</h2>
                     <p class="topbar-sub">{% block subtitle %}Cổng thông tin tra cứu không gian xanh khu vực trường học{% endblock %}</p>
                 </div>
-            </div>
-            <div class="top-actions">
-                <div class="user-chip">{{ request.user.username }} · {{ user_role_name }}</div>
-                <form action="{% url 'logout' %}" method="post">
-                    {% csrf_token %}
-                    <button class="btn btn-line" type="submit">Đăng xuất</button>
-                </form>
             </div>
         </header>
 

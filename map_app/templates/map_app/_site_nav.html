@@ -1,0 +1,26 @@
+{% load static %}
+<header class="site-header">
+  <nav class="site-nav" aria-label="Điều hướng chính">
+    <a class="site-brand" href="{% url 'home' %}" aria-label="HCMUNRE WebGIS, trang chủ">
+      <span class="site-brand-mark" aria-hidden="true">{% if site_brand.image %}<img src="{{ site_brand.image.url }}" alt="">{% else %}<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3c2.8 3.2 8 6.2 8 11.2A8 8 0 1 1 4 14.2C4 9.2 9.2 6.2 12 3Z" fill="#1f7a4d"/></svg>{% endif %}</span>
+      <span class="site-brand-copy"><strong>{{ site_brand.title|default:"HCMUNRE WebGIS" }}</strong><small>{{ site_brand.body|default:"Không gian xanh" }}</small></span>
+    </a>
+    <button class="site-nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav-links" aria-label="Mở điều hướng">☰</button>
+    <div class="site-nav-links" id="site-nav-links">
+      <a href="{% url 'home' %}"{% if request.resolver_match.url_name == 'home' %} aria-current="page"{% endif %}>Trang chủ</a>
+      <a href="{% url 'map_view' %}"{% if request.resolver_match.url_name == 'map_view' %} aria-current="page"{% endif %}>Bản đồ khuôn viên</a>
+      {% if can_access_portal %}
+        <a href="{% url 'portal_home' %}"{% if request.resolver_match.url_name == 'portal_home' %} aria-current="page"{% endif %}>Quản lý dữ liệu</a>
+      {% endif %}
+      {% if user.is_authenticated %}
+        <span class="site-user-chip">{{ request.user.username }} · {{ user_role_name }}</span>
+        <a href="{% url 'account' %}">Thông tin cá nhân</a>
+        <form action="{% url 'logout' %}" method="post" class="site-nav-form">{% csrf_token %}<button type="submit" class="site-nav-button">Đăng xuất</button></form>
+      {% else %}
+        <a href="{% url 'login' %}">Đăng nhập</a>
+        <a class="site-nav-register" href="{% url 'register' %}">Đăng ký</a>
+      {% endif %}
+    </div>
+  </nav>
+</header>
+<script src="{% static 'map_app/js/site-nav.js' %}" defer></script>

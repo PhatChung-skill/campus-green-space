@@ -8,10 +8,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'map_app/css/portal.css' %}">
+    <link rel="stylesheet" href="{% static 'map_app/css/site-nav.css' %}">
 </head>
-<body class="auth-page">
+<body>
+    {% include "map_app/_site_nav.html" %}
+    <main class="auth-page">
     <div class="auth-card" style="max-width:480px">
-        <p class="badge">HCMUNRE</p>
         <h1>Tạo tài khoản</h1>
         <p class="lead">Điền thông tin bên dưới để đăng ký. Tài khoản mới sẽ có vai trò <strong>Khách</strong>.</p>
 
@@ -64,8 +66,9 @@
             Đã có tài khoản? <a href="{% url 'login' %}">Đăng nhập</a>
         </p>
         <p style="text-align:center;margin:8px 0 0">
-            <a href="{% url 'map_view' %}">Xem bản đồ công khai</a>
+            <a href="{% url 'home' %}">Về trang chủ</a> · <a href="{% url 'map_view' %}">Xem bản đồ</a>
         </p>
     </div>
+    </main>
 </body>
 </html>

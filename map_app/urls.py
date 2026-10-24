@@ -4,6 +4,7 @@ from . import portal_views, views
 
 urlpatterns = [
     path("", views.map_view, name="map_view"),
+    path("tai-khoan/", views.account_view, name="account"),
     path("dashboard/", portal_views.dashboard_view, name="dashboard"),
     # Public API
     path("api/tang/<int:building_id>/", views.floors_by_building, name="public_floors"),

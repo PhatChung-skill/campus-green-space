@@ -2,12 +2,44 @@ import json
 import re
 import unicodedata
 
+from django.contrib.auth.decorators import login_required
 from django.core.serializers import serialize
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.http import JsonResponse
 from django.shortcuts import render
 
-from .models import Building, Campus, Floor, GreenArea, ParkingArea, Room, Tree
+from .models import Building, Campus, Floor, GreenArea, HomepageBlock, HomepageFeatureGroup, ParkingArea, Room, Tree
+
+
+def homepage_view(request):
+    blocks = HomepageBlock.objects.filter(is_active=True)
+    active_features = HomepageBlock.objects.filter(kind=HomepageBlock.Kind.FEATURE, is_active=True).order_by("sort_order", "pk")
+    feature_groups = [
+        {"group": group, "features": group.active_blocks}
+        for group in HomepageFeatureGroup.objects.filter(
+            is_active=True,
+            blocks__kind=HomepageBlock.Kind.FEATURE,
+            blocks__is_active=True,
+        ).distinct().order_by("sort_order", "pk").prefetch_related(
+            Prefetch("blocks", queryset=active_features, to_attr="active_blocks")
+        )
+    ]
+    return render(
+        request,
+        "map_app/homepage.html",
+        {
+            "hero": blocks.filter(kind=HomepageBlock.Kind.HERO).first(),
+            "intro": blocks.filter(kind=HomepageBlock.Kind.INTRO).first(),
+            "feature_groups": feature_groups,
+            "footer": blocks.filter(kind=HomepageBlock.Kind.FOOTER).first(),
+        },
+    )
+
+
+@login_required
+def account_view(request):
+    profile = getattr(request.user, "profile", None)
+    return render(request, "map_app/account.html", {"profile": profile})
 
 
 def map_view(request):

@@ -1,0 +1,44 @@
+{% extends "manage/base.html" %}
+{% block title %}{% if is_create %}Thêm{% else %}Sửa{% endif %} nội dung · Trang chủ{% endblock %}
+{% block heading %}{% if is_create %}Thêm nội dung{% else %}Chỉnh sửa nội dung{% endif %}{% endblock %}
+{% block subtitle %}Khu vực: {{ kind_label }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .block-form-intro { margin-bottom:18px; padding:16px 18px; border:1px solid var(--line); border-radius:14px; background:#f4faf6; color:var(--muted); line-height:1.65; }
+  .block-form { max-width:980px; overflow:hidden; }
+  .block-form-head { padding:20px 24px; border-bottom:1px solid var(--line); background:linear-gradient(120deg,#f5faf6,#fff); }
+  .block-form-head h3 { margin:0; color:var(--pine); font-size:18px; }
+  .block-form-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; padding:24px; }
+  .block-form-fields .field { min-width:0; }
+  .block-form-fields .field:has(textarea) { grid-column:1/-1; }
+  .block-form-fields input[type=file] { display:block; width:100%; padding:9px; border:1px solid var(--line); border-radius:10px; background:#fbfffc; }
+  .block-form-fields .check-field { display:flex; align-items:center; gap:10px; }
+  .block-form-fields .check-field input { width:18px; height:18px; }
+  .block-preview { display:block; max-width:min(100%,440px); max-height:220px; margin:4px 0 10px; border:1px solid var(--line); border-radius:12px; object-fit:cover; }
+  .block-form-actions { display:flex; justify-content:flex-end; gap:10px; padding:16px 24px; border-top:1px solid var(--line); }
+  @media(max-width:700px) { .block-form-fields { grid-template-columns:1fr; } .block-form-fields .field:has(textarea) { grid-column:auto; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="block-form-intro">Chỉnh sửa riêng khu vực <strong>{{ kind_label }}</strong>. Ảnh tải lên sẽ thay ảnh hiện tại sau khi lưu; bỏ chọn ảnh hiện tại để gỡ ảnh khỏi trang chủ.</div>
+<form class="form-card block-form" method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div class="block-form-head"><h3>{{ kind_label }}{% if block %} · {{ block.title }}{% endif %}</h3></div>
+  {% if form.non_field_errors %}<div class="flash flash-error">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="block-form-fields">
+    {% for field in form %}
+      <div class="field{% if field.name == 'is_active' %} check-field{% endif %}">
+        {% if field.name != 'is_active' %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{% endif %}
+        {% if field.name == 'image' and block.image %}<a href="{{ block.image.url }}" target="_blank" rel="noopener"><img class="block-preview" src="{{ block.image.url }}" alt="Ảnh hiện tại: {{ block.image_alt|default:block.title }}"></a>{% endif %}
+        {{ field }}
+        {% if field.name == 'is_active' %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{% endif %}
+        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+        {% for error in field.errors %}<span class="field-error-msg">{{ error }}</span>{% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+  <div class="block-form-actions"><a class="btn btn-line" href="{% url 'homepage_content' %}">Hủy</a><button class="btn btn-primary" type="submit">{% if is_create %}Thêm nội dung{% else %}Lưu thay đổi{% endif %}</button></div>
+</form>
+{% endblock %}

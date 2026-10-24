@@ -4,13 +4,15 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 from map_app.portal_views import PortalLoginView, register_view
+from map_app.views import homepage_view
 
 urlpatterns = [
-    path("admin/", RedirectView.as_view(pattern_name="portal_home", permanent=False)),
+    path("admin/", RedirectView.as_view(pattern_name="homepage_content", permanent=False), name="custom_admin"),
     path("login/", PortalLoginView.as_view(), name="login"),
     path("dang-ky/", register_view, name="register"),
     path("quan-tri/", include("map_app.portal_urls")),
     path("map/", include("map_app.urls")),
+    path("", homepage_view, name="home"),
     path("", include("django.contrib.auth.urls")),
 ]
 

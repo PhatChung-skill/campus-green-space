@@ -4,6 +4,10 @@ from . import portal_views
 
 urlpatterns = [
     path("", portal_views.portal_home, name="portal_home"),
+    path("noi-dung-trang-chu/", portal_views.homepage_content_view, name="homepage_content"),
+    path("noi-dung-trang-chu/them/<slug:kind>/", portal_views.homepage_block_create_view, name="homepage_block_create"),
+    path("noi-dung-trang-chu/<int:pk>/sua/", portal_views.homepage_block_edit_view, name="homepage_block_edit"),
+    path("noi-dung-trang-chu/<int:pk>/xoa/", portal_views.homepage_block_delete_view, name="homepage_block_delete"),
     path(
         "api/hinh-hoc/<slug:entity>/<int:pk>/",
         portal_views.parent_geom,

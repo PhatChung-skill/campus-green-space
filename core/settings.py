@@ -22,13 +22,13 @@ ALLOWED_HOSTS = []
 
 # Application definition
 INSTALLED_APPS = [
+    'map_app.apps.MapAppConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.gis',
-    'map_app.apps.MapAppConfig',
 ]
 
 MIDDLEWARE = [
@@ -130,5 +130,5 @@ if os.name == 'nt':
 
 # Cấu hình điều hướng Đăng nhập / Đăng xuất
 LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/quan-tri/'
-LOGOUT_REDIRECT_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'

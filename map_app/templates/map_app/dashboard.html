@@ -7,18 +7,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'map_app/css/portal.css' %}">
+    <link rel="stylesheet" href="{% static 'map_app/css/site-nav.css' %}">
 </head>
 <body class="guest-page">
-    <div class="guest-nav">
-        <strong>Cổng Thông Tin Không Gian Xanh</strong>
-        <div class="top-actions">
-            <a href="{% url 'map_view' %}">Xem bản đồ</a>
-            <form action="{% url 'logout' %}" method="post">
-                {% csrf_token %}
-                <button type="submit">Đăng xuất</button>
-            </form>
-        </div>
-    </div>
+    {% include "map_app/_site_nav.html" %}
     <div class="guest-body">
         <p class="badge">Tài khoản khách</p>
         <h1>Xin chào, {{ username }}</h1>

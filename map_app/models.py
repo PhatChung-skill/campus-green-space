@@ -236,3 +236,61 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.get_username()
+
+
+class HomepageFeatureGroup(models.Model):
+    title = models.CharField(max_length=220, unique=True, verbose_name="Tiêu đề nhóm tiện ích")
+    sort_order = models.PositiveIntegerField(default=0, verbose_name="Thứ tự hiển thị")
+    is_active = models.BooleanField(default=True, verbose_name="Đang hiển thị")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Cập nhật lúc")
+
+    class Meta:
+        ordering = ("sort_order", "pk")
+        verbose_name = "Nhóm tiện ích trang chủ"
+        verbose_name_plural = "Nhóm tiện ích trang chủ"
+
+    def __str__(self):
+        return self.title
+
+
+class HomepageBlock(models.Model):
+    """Một khối nội dung độc lập có thể thêm, sửa, ẩn hoặc xóa trên trang chủ."""
+
+    class Kind(models.TextChoices):
+        HEADER = "header", "Đầu trang"
+        HERO = "hero", "Banner chính"
+        INTRO = "intro", "Phần giới thiệu"
+        FEATURE = "feature", "Thẻ tiện ích"
+        FOOTER = "footer", "Chân trang"
+
+    kind = models.CharField(max_length=20, choices=Kind.choices, db_index=True, verbose_name="Khu vực")
+    eyebrow = models.CharField(max_length=120, blank=True, verbose_name="Nhãn phụ")
+    title = models.CharField(max_length=220, verbose_name="Tiêu đề")
+    body = models.TextField(blank=True, verbose_name="Nội dung")
+    feature_group = models.ForeignKey(
+        HomepageFeatureGroup,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="blocks",
+        verbose_name="Nhóm tiện ích",
+    )
+    image = models.ImageField(upload_to="homepage/blocks/", blank=True, verbose_name="Hình ảnh")
+    image_alt = models.CharField(max_length=220, blank=True, verbose_name="Mô tả ảnh")
+    button_label = models.CharField(max_length=100, blank=True, verbose_name="Nhãn nút")
+    button_url = models.CharField(max_length=500, blank=True, verbose_name="Liên kết nút")
+    sort_order = models.PositiveIntegerField(default=0, verbose_name="Thứ tự hiển thị")
+    is_active = models.BooleanField(default=True, verbose_name="Đang hiển thị")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Cập nhật lúc")
+
+    class Meta:
+        ordering = ("kind", "sort_order", "pk")
+        verbose_name = "Khối nội dung trang chủ"
+        verbose_name_plural = "Các khối nội dung trang chủ"
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def group_title(self):
+        return self.feature_group.title if self.feature_group_id else ""

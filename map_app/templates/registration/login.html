@@ -8,10 +8,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'map_app/css/portal.css' %}">
+    <link rel="stylesheet" href="{% static 'map_app/css/site-nav.css' %}">
 </head>
-<body class="auth-page">
+<body>
+    {% include "map_app/_site_nav.html" %}
+    <main class="auth-page">
     <div class="auth-card">
-        <p class="badge">HCMUNRE</p>
         <h1>Cổng không gian xanh</h1>
         <p class="lead">Đăng nhập để quản lý hoặc tra cứu khuôn viên trường Đại học Tài nguyên và Môi trường TP.HCM.</p>
         {% if form.non_field_errors %}
@@ -32,8 +34,9 @@
             </div>
             <button class="btn btn-primary" type="submit" style="width:100%">Vào hệ thống</button>
         </form>
-        <p style="text-align:center;margin:18px 0 0"><a href="{% url 'map_view' %}">Xem bản đồ công khai</a></p>
+        <p style="text-align:center;margin:18px 0 0"><a href="{% url 'map_view' %}">Xem bản đồ</a></p>
         <p style="text-align:center;margin:8px 0 0">Chưa có tài khoản? <a href="{% url 'register' %}">Tạo tài khoản mới</a></p>
     </div>
+    </main>
 </body>
 </html>

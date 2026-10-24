@@ -1,5 +1,6 @@
 import json
 
+from django.contrib.auth import login as auth_login
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -19,11 +20,12 @@ from .catalog import (
     search_queryset,
     user_search_qs,
 )
-from .forms import PortalLoginForm, RegisterForm, RoleForm, UserCreateForm, UserUpdateForm
-from .models import Building, Campus, Floor, GreenArea, ParkingArea, Role, Room, Tree, UserProfile
+from .forms import HomepageBlockForm, PortalLoginForm, RegisterForm, RoleForm, UserCreateForm, UserUpdateForm
+from .models import Building, Campus, Floor, GreenArea, HomepageBlock, ParkingArea, Role, Room, Tree, UserProfile
 from .permissions import (
     ADMIN_ROLE_NAME,
     can_access_portal,
+    is_admin_user,
     perm_required,
     portal_required,
     user_has_perm,
@@ -35,12 +37,7 @@ class PortalLoginView(LoginView):
     authentication_form = PortalLoginForm
 
     def get_success_url(self):
-        next_url = self.get_redirect_url()
-        if next_url:
-            return next_url
-        if can_access_portal(self.request.user):
-            return reverse("portal_home")
-        return reverse("dashboard")
+        return reverse("home")
 
 
 def _querystring(request):
@@ -125,6 +122,115 @@ def portal_home(request):
             "quick_adds": quick_adds,
             "campuses_geojson": campuses_geojson,
             "campus_count": Campus.objects.count(),
+        },
+    )
+
+
+@login_required
+def homepage_content_view(request):
+    if not is_admin_user(request.user):
+        messages.error(request, "Chỉ Quản trị viên được phép chỉnh sửa nội dung trang chủ.")
+        return redirect("portal_home" if can_access_portal(request.user) else "home")
+    sections = []
+    for kind, label, description in (
+        (HomepageBlock.Kind.HEADER, "Đầu trang", "Tên thương hiệu, mô tả ngắn và logo dùng trên thanh điều hướng."),
+        (HomepageBlock.Kind.HERO, "Banner đầu trang", "Nội dung nổi bật và nút khám phá bản đồ."),
+        (HomepageBlock.Kind.INTRO, "Phần giới thiệu", "Nội dung chính và hình ảnh giới thiệu."),
+        (HomepageBlock.Kind.FEATURE, "Các thẻ tiện ích", "Mỗi thẻ được thêm, sửa hoặc xóa độc lập."),
+        (HomepageBlock.Kind.FOOTER, "Chân trang", "Thông tin và liên kết ở cuối trang."),
+    ):
+        items = list(HomepageBlock.objects.filter(kind=kind).order_by("sort_order", "pk"))
+        sections.append(
+            {
+                "kind": kind,
+                "label": label,
+                "description": description,
+                "items": items,
+                "can_add": kind == HomepageBlock.Kind.FEATURE or not items,
+            }
+        )
+    return render(
+        request,
+        "manage/homepage_content_list.html",
+        {"sections": sections},
+    )
+
+
+def _homepage_admin_or_redirect(request):
+    if is_admin_user(request.user):
+        return None
+    messages.error(request, "Chỉ Quản trị viên được phép chỉnh sửa nội dung trang chủ.")
+    return redirect("portal_home" if can_access_portal(request.user) else "home")
+
+
+@login_required
+def homepage_block_create_view(request, kind):
+    denied = _homepage_admin_or_redirect(request)
+    if denied:
+        return denied
+    labels = dict(HomepageBlock.Kind.choices)
+    if kind not in labels:
+        raise Http404("Không tìm thấy loại nội dung.")
+    if kind != HomepageBlock.Kind.FEATURE and HomepageBlock.objects.filter(kind=kind).exists():
+        messages.warning(request, f'Khu vực "{labels[kind]}" chỉ có một khối nội dung. Hãy sửa khối đang có.')
+        return redirect("homepage_content")
+    form = HomepageBlockForm(request.POST or None, request.FILES or None, kind=kind)
+    if request.method == "POST" and form.is_valid():
+        block = form.save()
+        messages.success(request, f'Đã thêm nội dung vào khu vực "{labels[kind]}".')
+        return redirect("homepage_content")
+    return render(
+        request,
+        "manage/homepage_block_form.html",
+        {"form": form, "kind": kind, "kind_label": labels[kind], "is_create": True},
+    )
+
+
+@login_required
+def homepage_block_edit_view(request, pk):
+    denied = _homepage_admin_or_redirect(request)
+    if denied:
+        return denied
+    block = get_object_or_404(HomepageBlock, pk=pk)
+    form = HomepageBlockForm(request.POST or None, request.FILES or None, instance=block)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, f'Đã cập nhật "{block.title}".')
+        return redirect("homepage_content")
+    return render(
+        request,
+        "manage/homepage_block_form.html",
+        {
+            "form": form,
+            "kind": block.kind,
+            "kind_label": block.get_kind_display(),
+            "block": block,
+            "is_create": False,
+        },
+    )
+
+
+@login_required
+def homepage_block_delete_view(request, pk):
+    denied = _homepage_admin_or_redirect(request)
+    if denied:
+        return denied
+    block = get_object_or_404(HomepageBlock, pk=pk)
+    if request.method == "POST":
+        title = block.title
+        feature_group = block.feature_group if block.kind == HomepageBlock.Kind.FEATURE else None
+        block.delete()
+        if feature_group and not feature_group.blocks.exists():
+            feature_group.delete()
+        messages.success(request, f'Đã xóa nội dung "{title}" khỏi trang chủ.')
+        return redirect("homepage_content")
+    return render(
+        request,
+        "manage/confirm_delete.html",
+        {
+            "title": "Xóa nội dung trang chủ",
+            "object_label": block.title,
+            "cancel_url": reverse("homepage_content"),
         },
     )
 
@@ -542,13 +648,11 @@ def dashboard_view(request):
 def register_view(request):
     """Trang đăng ký tài khoản công khai. Role mặc định là 'Khách'."""
     if request.user.is_authenticated:
-        return redirect("dashboard")
+        return redirect("home")
     form = RegisterForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(
-            request,
-            "Đăng ký thành công! Bạn có thể đăng nhập ngay bây giờ.",
-        )
-        return redirect("login")
+        user = form.save()
+        auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+        messages.success(request, "Đăng ký thành công. Chào mừng bạn đến với HCMUNRE WebGIS!")
+        return redirect("home")
     return render(request, "registration/register.html", {"form": form})
