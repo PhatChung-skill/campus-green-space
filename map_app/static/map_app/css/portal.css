@@ -320,6 +320,13 @@ a { color: inherit; }
   z-index: 5;
 }
 
+.topbar > .feedback-new-alert { display:inline-flex; flex:none; align-items:center; gap:9px; padding:10px 14px; border:1px solid #a61b16; border-radius:999px; background:#c62828; color:#fff !important; box-shadow:0 5px 18px #b4231840; font-size:12px; font-weight:750; text-decoration:none !important; }
+.topbar > .feedback-new-alert:hover { background:#a61b16; color:#fff !important; transform:translateY(-1px); }
+.topbar > .feedback-new-alert[hidden] { display:none; }
+.feedback-new-alert > span:last-child { display:grid; min-width:22px; height:22px; padding:0 5px; place-items:center; border-radius:999px; background:#fff; color:#b42318; font-size:11px; font-weight:800; }
+.feedback-alert-dot { width:9px; height:9px; border-radius:50%; background:#fff; box-shadow:0 0 0 0 #ffffff70; animation:feedback-alert-pulse 1.7s ease-out infinite; }
+@keyframes feedback-alert-pulse { 70% { box-shadow:0 0 0 8px #d92d2000; } 100% { box-shadow:0 0 0 0 #d92d2000; } }
+
 .topbar-title {
   margin: 0;
   font-size: 22px;
@@ -692,6 +699,41 @@ select:focus {
   font-weight: 650;
 }
 
+.feedback-nav-badge { display:inline-grid; min-width:20px; height:20px; margin-left:auto; padding:0 5px; place-items:center; border-radius:999px; background:#f04438; color:white; font-size:11px; font-weight:800; }
+.feedback-inbox-filters { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:16px; }
+.feedback-inbox-filters input { flex:1 1 280px; }
+.feedback-inbox-filters select { flex:0 1 180px; }
+.feedback-row-unread td { background:#f0faf3; }
+.feedback-status-pill { display:inline-block; padding:4px 9px; border-radius:999px; background:#eef3ef; color:#607468; font-size:11px; font-weight:700; white-space:nowrap; }
+.feedback-status-pill.is-unread { background:#ffe8e6; color:#b42318; }
+.feedback-thread-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin-bottom:14px; }
+.feedback-thread-toolbar form { margin:0; }
+.feedback-staff-chat { display:flex; flex-direction:column; width:100%; max-width:none; height:min(720px,calc(100vh - 320px)); min-height:420px; max-height:calc(100vh - 260px); overflow:hidden; border:1px solid var(--line); border-radius:var(--radius); background:#fff; box-shadow:var(--shadow); }
+.feedback-staff-chat > .feedback-messages { min-height:0; }
+.feedback-staff-messages { min-height:0; flex:1 1 0%; }
+.feedback-staff-reply { flex:0 0 auto; padding:12px 16px; border-top:1px solid var(--line); }
+.feedback-staff-reply > label { display:block; margin-bottom:7px; font-size:13px; font-weight:700; }
+.feedback-staff-reply textarea { width:100%; min-height:58px; max-height:110px; padding:8px 12px; border:1px solid var(--line); border-radius:11px; font:inherit; }
+.feedback-staff-reply > div { display:flex; align-items:center; gap:8px; margin-top:10px; color:var(--muted); font-size:12px; }
+.feedback-staff-reply .feedback-emoji-row { gap:9px; margin:0; padding:0 0 7px; }
+.feedback-staff-reply .feedback-emoji-row button { margin:0; }
+.feedback-staff-reply .feedback-send { margin-left:auto; }
+.feedback-staff-attach { cursor:pointer; color:var(--forest); font-weight:650; }
+.feedback-delete-message { margin-top:6px; text-align:right; }
+.feedback-delete-message button { padding:2px 5px; border:0; background:transparent; color:#a13d35; font:600 10px "Be Vietnam Pro","Segoe UI",sans-serif; cursor:pointer; }
+.feedback-delete-message button:hover { text-decoration:underline; }
+@media(max-width:720px) { .feedback-inbox-filters select { flex:1 1 120px; } .feedback-staff-chat { max-height:calc(100vh - 230px); } }
+.feedback-action-toast { position:fixed; z-index:1800; top:calc(var(--site-nav-height, 76px) + 14px); right:24px; max-width:min(420px,calc(100vw - 32px)); padding:12px 18px; border:1px solid #9bd2aa; border-radius:12px; background:#e8f7ec; color:#14532d; box-shadow:0 10px 30px #0b3d2e22; font-size:13px; font-weight:650; }
+.feedback-action-toast.is-error { border-color:#f0aaa5; background:#fff0ef; color:#a3211a; }
+.feedback-action-toast[hidden] { display:none; }
+@media(max-width:900px) { .topbar { flex-wrap:wrap; } .feedback-new-alert { margin-left:40px; } }
+@media(max-width:520px) { .feedback-new-alert { gap:6px; padding:7px 9px; font-size:10px; } }
+
 @media (max-width: 900px) {
   .map-overlay { left: 16px; }
 }
+
+/* Portal feedback reply refinements */
+.feedback-staff-reply .feedback-reply-preview { margin-bottom:10px; }
+.feedback-staff-reply .feedback-reply-preview-text { max-width:550px; }
+.feedback-message-subactions .feedback-delete-message { margin-top:0; }

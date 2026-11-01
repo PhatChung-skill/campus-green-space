@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'map_app/css/site-nav.css' %}">
+  <link rel="stylesheet" href="{% static 'map_app/css/feedback-chat.css' %}?v=zalo-reply-10">
   <style>
     :root { --forest:#0b3d2e; --leaf:#1f7a4d; --mint:#e8f5ed; --ink:#16352a; }
     body { color:var(--ink); font-family:"Be Vietnam Pro",sans-serif; background:#fbfdfb; }
@@ -91,6 +92,37 @@
 </main>
 
 {% if footer %}<footer class="py-4"><div class="container d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2"><div><strong>{{ footer.title }}</strong>{% if footer.body %}<div>{{ footer.body|linebreaksbr }}</div>{% endif %}</div>{% if footer.button_label %}<a class="link-light" href="{{ footer.button_url|default:'/map/' }}">{{ footer.button_label }}</a>{% endif %}</div></footer>{% endif %}
+{% if not can_access_portal %}
+<section class="feedback-chat" data-api-url="{% url 'feedback_api' %}" aria-label="Góp ý và báo lỗi">
+  <button class="feedback-launcher" type="button" aria-expanded="false" aria-controls="feedback-panel" aria-label="Mở hộp góp ý">💬<span class="feedback-launcher-label">Góp ý / Báo lỗi</span><span class="feedback-unread-dot" hidden></span></button>
+  <div class="feedback-panel" id="feedback-panel" role="dialog" aria-modal="false" aria-labelledby="feedback-title" hidden>
+    <header class="feedback-panel-head"><div><strong id="feedback-title">Góp ý / Báo lỗi</strong><small>Chúng tôi luôn sẵn sàng lắng nghe</small></div><button class="feedback-close" type="button" aria-label="Đóng hộp chat">×</button></header>
+    {% if user.is_authenticated %}
+      <div class="feedback-category-wrap"><label for="feedback-category">Chủ đề</label><select id="feedback-category"><option value="feedback">Góp ý</option><option value="bug">Báo lỗi</option></select></div>
+      <div class="feedback-messages" aria-live="polite"><p class="feedback-welcome">Xin chào {{ request.user.first_name|default:request.user.username }}! Bạn có thể gửi góp ý, mô tả lỗi và đính kèm ảnh tại đây.</p></div>
+      <p class="feedback-status" role="status" aria-live="polite"></p>
+      <form class="feedback-compose" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="reply_to" value="">
+        <div class="feedback-reply-preview" hidden>
+          <div class="feedback-reply-preview-bar"></div>
+          <div class="feedback-reply-preview-content">
+            <div class="feedback-reply-preview-sender">Đang trả lời: <strong data-reply-sender></strong></div>
+            <div class="feedback-reply-preview-text" data-reply-text></div>
+          </div>
+          <button type="button" class="feedback-reply-cancel" aria-label="Hủy trả lời" title="Hủy trả lời">✕</button>
+        </div>
+        <div class="feedback-emoji-row" aria-label="Chọn emoji"><button type="button" data-emoji="🙂">🙂</button><button type="button" data-emoji="😊">😊</button><button type="button" data-emoji="👍">👍</button><button type="button" data-emoji="🙏">🙏</button><button type="button" data-emoji="❤️">❤️</button><button type="button" data-emoji="😅">😅</button></div>
+        <textarea name="body" maxlength="3000" rows="2" placeholder="Nhập tin nhắn..." aria-label="Nội dung tin nhắn"></textarea>
+        <div class="feedback-compose-tools"><label class="feedback-attach" title="Đính kèm hoặc chụp ảnh">📎<input type="file" name="image" accept="image/png,image/jpeg,image/webp" capture="environment" hidden></label><span class="feedback-file-name">Ảnh tối đa 5 MB</span><button class="feedback-send" type="submit">Gửi</button></div>
+      </form>
+    {% else %}
+      <div class="feedback-login-prompt"><span aria-hidden="true">🔒</span><p>Vui lòng đăng nhập tài khoản để gửi góp ý hoặc báo lỗi và nhận phản hồi.</p><a href="{% url 'login' %}?next={% url 'home' %}">Đăng nhập</a></div>
+    {% endif %}
+  </div>
+</section>
+<script src="{% static 'map_app/js/feedback-chat.js' %}?v=zalo-reply-10" defer></script>
+{% endif %}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

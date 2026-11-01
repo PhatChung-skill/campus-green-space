@@ -468,6 +468,7 @@ ROLE_CHECKBOX_FIELDS = [
     "can_add_tree",
     "can_change_tree",
     "can_delete_tree",
+    "can_manage_feedback",
 ]
 
 

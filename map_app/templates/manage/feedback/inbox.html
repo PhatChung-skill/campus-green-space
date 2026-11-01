@@ -1,0 +1,29 @@
+{% extends "manage/base.html" %}
+{% block title %}Góp ý / Báo lỗi{% endblock %}
+{% block heading %}Hộp thư góp ý / Báo lỗi{% endblock %}
+{% block subtitle %}{{ unread_count }} hội thoại chưa được đọc{% endblock %}
+{% block content %}
+<section class="feedback-inbox">
+  <form class="toolbar feedback-inbox-filters" method="get">
+    <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Tìm theo tài khoản hoặc nội dung tin nhắn">
+    <select class="form-select" name="status"><option value="">Tất cả hội thoại</option><option value="unread" {% if status == "unread" %}selected{% endif %}>Chưa đọc</option><option value="read" {% if status == "read" %}selected{% endif %}>Đã đọc</option></select>
+    <button class="btn btn-ghost" type="submit">Lọc</button>
+    {% if q or status %}<a class="btn btn-line" href="{% url 'portal_feedback_inbox' %}">Xóa lọc</a>{% endif %}
+  </form>
+  <div class="table-card table-wrap">
+    {% if threads %}
+    <table>
+      <thead><tr><th>Trạng thái</th><th>Người gửi</th><th>Chủ đề</th><th>Số tin</th><th>Cập nhật lần cuối</th><th></th></tr></thead>
+      <tbody>{% for thread in threads %}
+        <tr class="{% if thread.unread_for_staff %}feedback-row-unread{% endif %}">
+          <td>{% if thread.unread_for_staff %}<span class="feedback-status-pill is-unread">Chưa đọc</span>{% else %}<span class="feedback-status-pill">Đã đọc</span>{% endif %}</td>
+          <td><strong>{{ thread.username_snapshot }}</strong></td><td>{{ thread.get_category_display }}</td><td>{{ thread.message_count }}</td><td>{{ thread.updated_at|date:"d/m/Y H:i" }}</td>
+          <td><a class="btn btn-ghost" href="{% url 'portal_feedback_thread' thread.pk %}">Mở hội thoại</a></td>
+        </tr>
+      {% endfor %}</tbody>
+    </table>
+    {% include "manage/_pager.html" %}
+    {% else %}<div class="empty">{% if q or status %}Không có hội thoại phù hợp bộ lọc.{% else %}Chưa có góp ý hoặc báo lỗi nào.{% endif %}</div>{% endif %}
+  </div>
+</section>
+{% endblock %}

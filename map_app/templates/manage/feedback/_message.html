@@ -1,0 +1,24 @@
+<article class="feedback-message{% if message.is_staff_reply %} is-mine{% endif %}" data-feedback-message="{{ message.pk }}">
+  {% if message.reply_to %}
+  <div class="feedback-quote-box" data-jump-to="{{ message.reply_to.pk }}" title="Nhấp để xem tin nhắn gốc">
+    <div class="feedback-quote-bar"></div>
+    <div class="feedback-quote-inner">
+      <div class="feedback-quote-sender">
+        <span class="feedback-quote-icon">↩</span>
+        {% if message.reply_to.is_staff_reply %}Nhân viên hỗ trợ{% else %}{{ message.reply_to.sender_name }}{% endif %}
+      </div>
+      <div class="feedback-quote-body">{{ message.reply_to.snippet|default:"[Hình ảnh]" }}</div>
+    </div>
+  </div>
+  {% endif %}
+  {% if message.body %}<p class="feedback-message-body">{{ message.body|linebreaksbr }}</p>{% endif %}
+  {% if message.image %}<a href="{% url 'feedback_image' message.pk %}" target="_blank" rel="noopener"><img src="{% url 'feedback_image' message.pk %}" alt="Ảnh đính kèm bởi {{ message.sender_name }}"></a>{% endif %}
+  <small class="feedback-message-meta">{{ message.sender_name }} · {{ message.created_at|date:"d/m/Y H:i" }}</small>
+  <div class="feedback-message-actions-bar">
+    <form method="post" class="feedback-message-reactions" data-feedback-reactions data-message-id="{{ message.pk }}">{% csrf_token %}<input type="hidden" name="action" value="react"><input type="hidden" name="message_id" value="{{ message.pk }}"><div class="feedback-reaction-summary">{% for reaction in message.reaction_summary %}{% if reaction.count %}<button type="submit" name="emoji" value="{{ reaction.emoji }}" class="feedback-reaction{% if reaction.reacted %} is-reacted{% endif %}" aria-pressed="{{ reaction.reacted|yesno:'true,false' }}" aria-label="{{ reaction.label }} · {{ reaction.count }}" title="Bấm để thả hoặc gỡ {{ reaction.label }}">{{ reaction.emoji }}</button>{% endif %}{% endfor %}{% if message.reaction_total %}<span class="feedback-reaction-total">{{ message.reaction_total }}</span>{% endif %}<button class="feedback-reaction-add" type="button" data-reaction-picker-toggle aria-expanded="false" aria-label="Mở danh sách emoji cảm xúc" title="Thả cảm xúc">☺ +</button></div></form>
+    <div class="feedback-message-subactions">
+      <button type="button" class="feedback-reply-btn" data-reply-trigger data-message-id="{{ message.pk }}" data-sender="{{ message.sender_name }}" data-snippet="{{ message.snippet|default:'[Hình ảnh]' }}" title="Trả lời tin nhắn này"><span class="feedback-quote-mark">”</span> Trả lời</button>
+      <form method="post" class="feedback-delete-message" data-feedback-action onsubmit="return confirm('Xóa riêng tin nhắn này và ảnh đính kèm?')">{% csrf_token %}<input type="hidden" name="action" value="delete_message"><input type="hidden" name="message_id" value="{{ message.pk }}"><button type="submit" aria-label="Xóa tin nhắn này">Xóa tin nhắn</button></form>
+    </div>
+  </div>
+</article>

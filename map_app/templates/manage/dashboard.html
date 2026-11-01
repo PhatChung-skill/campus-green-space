@@ -10,7 +10,7 @@
 {% block content %}
 <div class="stats">
     {% for item in stats %}
-    <a class="stat-card stat-link" href="{{ item.url }}">
+    <a class="stat-card stat-link" href="{{ item.url }}"{% if item.label == "Góp ý / Báo lỗi" %} data-feedback-stat data-count-url="{% url 'portal_feedback_unread_count' %}"{% endif %}>
         <span>{{ item.label }}</span>
         <strong>{{ item.value }}</strong>
         <em>{{ item.hint }}</em>

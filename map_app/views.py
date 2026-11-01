@@ -1,14 +1,20 @@
 import json
+import mimetypes
 import re
 import unicodedata
 
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.core.serializers import serialize
 from django.db.models import Prefetch, Q
-from django.http import JsonResponse
-from django.shortcuts import render
+from django.http import FileResponse, Http404, JsonResponse
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
+from django.utils import timezone
+from django.views.decorators.http import require_GET
 
-from .models import Building, Campus, Floor, GreenArea, HomepageBlock, HomepageFeatureGroup, ParkingArea, Room, Tree
+from .models import Building, Campus, FeedbackMessage, FeedbackReaction, FeedbackThread, Floor, GreenArea, HomepageBlock, HomepageFeatureGroup, ParkingArea, Room, Tree
+from .permissions import can_access_portal, user_has_perm
 
 
 def homepage_view(request):
@@ -34,6 +40,148 @@ def homepage_view(request):
             "footer": blocks.filter(kind=HomepageBlock.Kind.FOOTER).first(),
         },
     )
+
+
+def _feedback_message_json(message, user):
+    totals = {}
+    reacted = set()
+    for reaction in message.reactions.all():
+        totals[reaction.emoji] = totals.get(reaction.emoji, 0) + 1
+        if reaction.user_id == user.pk:
+            reacted.add(reaction.emoji)
+    reply_data = None
+    if message.reply_to_id and message.reply_to:
+        if message.reply_to.sender_id == user.pk:
+            reply_sender = "Bạn"
+        elif message.reply_to.is_staff_reply:
+            reply_sender = message.reply_to.sender_name or "Nhân viên hỗ trợ"
+        else:
+            reply_sender = message.reply_to.sender_name or "Khách"
+        reply_data = {
+            "id": message.reply_to.pk,
+            "sender": reply_sender,
+            "body": message.reply_to.snippet,
+            "has_image": bool(message.reply_to.image),
+        }
+    return {
+        "id": message.pk,
+        "sender": message.sender_name,
+        "is_staff": message.is_staff_reply,
+        "body": message.body,
+        "image": reverse("feedback_image", args=[message.pk]) if message.image else "",
+        "created_at": timezone.localtime(message.created_at).strftime("%I:%M %p · %d/%m/%Y"),
+        "reactions": [
+            {"emoji": emoji, "count": totals.get(emoji, 0), "reacted": emoji in reacted}
+            for emoji in FeedbackReaction.Emoji.values
+        ],
+        "reply_to": reply_data,
+    }
+
+
+@login_required
+def feedback_api(request):
+    if can_access_portal(request.user):
+        return JsonResponse({"detail": "Kênh gửi góp ý dành cho tài khoản khách."}, status=403)
+    thread = FeedbackThread.objects.filter(user=request.user).first()
+    if request.method == "GET":
+        return JsonResponse({
+            "messages": [_feedback_message_json(item, request.user) for item in thread.messages.prefetch_related("reactions").select_related("reply_to").all()] if thread else [],
+            "category": thread.category if thread else FeedbackThread.Category.FEEDBACK,
+            "has_unread": bool(thread and thread.user_read_at is None),
+        })
+    if request.method != "POST":
+        return JsonResponse({"detail": "Phương thức không được hỗ trợ."}, status=405)
+
+    if request.POST.get("action") == "mark_read":
+        if thread and thread.user_read_at is None:
+            thread.user_read_at = timezone.now()
+            thread.save(update_fields=["user_read_at"])
+        return JsonResponse({"ok": True})
+
+    if request.POST.get("action") == "react":
+        if not thread:
+            return JsonResponse({"detail": "Chưa có hội thoại để thả cảm xúc."}, status=404)
+        emoji = request.POST.get("emoji", "")
+        if emoji not in FeedbackReaction.Emoji.values:
+            return JsonResponse({"detail": "Emoji không hợp lệ."}, status=422)
+        try:
+            message_id = int(request.POST.get("message_id", ""))
+        except (TypeError, ValueError):
+            return JsonResponse({"detail": "Tin nhắn không hợp lệ."}, status=422)
+        message = get_object_or_404(thread.messages.prefetch_related("reactions"), pk=message_id)
+        reaction, created = FeedbackReaction.objects.get_or_create(message=message, user=request.user, emoji=emoji)
+        if not created:
+            reaction.delete()
+        thread.user_read_at = timezone.now()
+        thread.save(update_fields=["user_read_at"])
+        message = thread.messages.prefetch_related("reactions").select_related("reply_to").get(pk=message.pk)
+        return JsonResponse({"message": _feedback_message_json(message, request.user)})
+
+    body = request.POST.get("body", "").strip()
+    image = request.FILES.get("image")
+    category = request.POST.get("category", FeedbackThread.Category.FEEDBACK)
+    if len(body) > 3000:
+        return JsonResponse({"detail": "Nội dung tối đa 3.000 ký tự."}, status=422)
+    if not body and not image:
+        return JsonResponse({"detail": "Hãy nhập nội dung hoặc đính kèm hình ảnh."}, status=422)
+    if image and image.size > 5 * 1024 * 1024:
+        return JsonResponse({"detail": "Hình ảnh tối đa 5 MB."}, status=422)
+    if not thread and category not in FeedbackThread.Category.values:
+        return JsonResponse({"detail": "Loại góp ý không hợp lệ."}, status=422)
+    try:
+        if image:
+            FeedbackMessage._meta.get_field("image").clean(image, None)
+    except ValidationError:
+        return JsonResponse({"detail": "Tệp gửi lên không hợp lệ. Hãy dùng hình PNG, JPG hoặc WEBP."}, status=422)
+    if not thread:
+        thread = FeedbackThread.objects.create(
+            user=request.user,
+            username_snapshot=(request.user.get_full_name() or request.user.get_username())[:150],
+            category=category,
+        )
+    reply_to = None
+    reply_to_id = request.POST.get("reply_to")
+    if reply_to_id:
+        try:
+            reply_to = thread.messages.filter(pk=int(reply_to_id)).first()
+        except (TypeError, ValueError):
+            reply_to = None
+
+    message = FeedbackMessage(
+        thread=thread,
+        sender=request.user,
+        sender_name=(request.user.get_full_name() or request.user.get_username())[:150],
+        reply_to=reply_to,
+        body=body,
+        image=image or "",
+    )
+    try:
+        message.full_clean()
+        message.save()
+    except ValidationError:
+        return JsonResponse({"detail": "Tệp gửi lên không hợp lệ. Hãy dùng hình PNG, JPG hoặc WEBP."}, status=422)
+    thread.staff_read_at = None
+    thread.user_read_at = timezone.now()
+    thread.save(update_fields=["staff_read_at", "user_read_at", "updated_at"])
+    message = FeedbackMessage.objects.prefetch_related("reactions").select_related("reply_to").get(pk=message.pk)
+    return JsonResponse({"message": _feedback_message_json(message, request.user)}, status=201)
+
+
+@login_required
+@require_GET
+def feedback_image(request, pk):
+    message = get_object_or_404(FeedbackMessage.objects.select_related("thread"), pk=pk)
+    allowed_as_staff = can_access_portal(request.user) and user_has_perm(request.user, "manage", "feedback")
+    if message.thread.user_id != request.user.pk and not allowed_as_staff:
+        raise Http404
+    if not message.image:
+        raise Http404
+    try:
+        image_file = message.image.open("rb")
+    except FileNotFoundError:
+        raise Http404
+    content_type = mimetypes.guess_type(message.image.name)[0] or "application/octet-stream"
+    return FileResponse(image_file, content_type=content_type)
 
 
 @login_required

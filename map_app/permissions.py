@@ -87,4 +87,6 @@ def nav_permissions(user):
         "greenarea",
         "tree",
     ]
-    return {res: user_has_perm(user, "view", res) for res in resources}
+    permissions = {res: user_has_perm(user, "view", res) for res in resources}
+    permissions["feedback"] = user_has_perm(user, "manage", "feedback")
+    return permissions

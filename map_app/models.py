@@ -200,6 +200,8 @@ class Role(models.Model):
     can_change_tree = models.BooleanField(default=False, verbose_name="Sửa cây xanh")
     can_delete_tree = models.BooleanField(default=False, verbose_name="Xóa cây xanh")
 
+    can_manage_feedback = models.BooleanField(default=False, verbose_name="Quản lý góp ý / báo lỗi")
+
     class Meta:
         verbose_name = "Vai trò"
         verbose_name_plural = "Vai trò"
@@ -294,3 +296,101 @@ class HomepageBlock(models.Model):
     @property
     def group_title(self):
         return self.feature_group.title if self.feature_group_id else ""
+
+
+class FeedbackThread(models.Model):
+    class Category(models.TextChoices):
+        FEEDBACK = "feedback", "Góp ý"
+        BUG = "bug", "Báo lỗi"
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="feedback_threads",
+        verbose_name="Người gửi",
+    )
+    username_snapshot = models.CharField(max_length=150, verbose_name="Tên người gửi")
+    category = models.CharField(max_length=12, choices=Category.choices, default=Category.FEEDBACK, verbose_name="Loại")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Tạo lúc")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Cập nhật lúc")
+    staff_read_at = models.DateTimeField(null=True, blank=True, db_index=True, verbose_name="Nhân viên đã đọc lúc")
+    user_read_at = models.DateTimeField(null=True, blank=True, verbose_name="Người gửi đã đọc lúc")
+
+    class Meta:
+        ordering = ("-updated_at", "-pk")
+        verbose_name = "Hộp thư góp ý / báo lỗi"
+        verbose_name_plural = "Hộp thư góp ý / báo lỗi"
+
+    def __str__(self):
+        return f"{self.get_category_display()} · {self.username_snapshot}"
+
+    @property
+    def unread_for_staff(self):
+        return self.staff_read_at is None
+
+
+class FeedbackMessage(models.Model):
+    thread = models.ForeignKey(FeedbackThread, on_delete=models.CASCADE, related_name="messages", verbose_name="Hội thoại")
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="feedback_messages",
+        verbose_name="Người gửi tin nhắn",
+    )
+    sender_name = models.CharField(max_length=150, verbose_name="Tên hiển thị")
+    is_staff_reply = models.BooleanField(default=False, verbose_name="Phản hồi của nhân viên")
+    reply_to = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="replies",
+        verbose_name="Trả lời tin nhắn",
+    )
+    body = models.TextField(blank=True, max_length=3000, verbose_name="Nội dung")
+    image = models.ImageField(upload_to="feedback/%Y/%m/", blank=True, verbose_name="Ảnh đính kèm")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Gửi lúc")
+
+    class Meta:
+        ordering = ("created_at", "pk")
+        verbose_name = "Tin nhắn góp ý / báo lỗi"
+        verbose_name_plural = "Tin nhắn góp ý / báo lỗi"
+
+    def __str__(self):
+        return f"{self.sender_name} · {self.created_at:%Y-%m-%d %H:%M}"
+
+    @property
+    def snippet(self):
+        if self.body:
+            first_line = self.body.strip().splitlines()[0]
+            if len(first_line) > 100:
+                return first_line[:97] + "..."
+            return first_line
+        if self.image:
+            return "[Hình ảnh]"
+        return ""
+
+
+class FeedbackReaction(models.Model):
+    class Emoji(models.TextChoices):
+        LIKE = "👍", "Thích"
+        HEART = "❤️", "Yêu thích"
+        LAUGH = "😂", "Vui"
+        SURPRISED = "😮", "Ngạc nhiên"
+        SAD = "😢", "Buồn"
+        THANKS = "🙏", "Cảm ơn"
+
+    message = models.ForeignKey(FeedbackMessage, on_delete=models.CASCADE, related_name="reactions", verbose_name="Tin nhắn")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="feedback_reactions", verbose_name="Người thả cảm xúc")
+    emoji = models.CharField(max_length=8, choices=Emoji.choices, verbose_name="Emoji")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Thả lúc")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=("message", "user", "emoji"), name="unique_feedback_message_reaction"),
+        ]
+        ordering = ("created_at", "pk")
+        verbose_name = "Cảm xúc tin nhắn góp ý"
+        verbose_name_plural = "Cảm xúc tin nhắn góp ý"

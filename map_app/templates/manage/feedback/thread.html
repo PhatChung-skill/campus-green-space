@@ -1,0 +1,41 @@
+{% extends "manage/base.html" %}
+{% load static %}
+{% block title %}{{ thread.get_category_display }} · {{ thread.username_snapshot }}{% endblock %}
+{% block heading %}{{ thread.get_category_display }}{% endblock %}
+{% block subtitle %}Hội thoại từ {{ thread.username_snapshot }} · tạo {{ thread.created_at|date:"d/m/Y H:i" }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'map_app/css/feedback-chat.css' %}?v=5">{% endblock %}
+{% block content %}
+<div class="feedback-action-toast" data-feedback-toast role="status" aria-live="polite" hidden></div>
+<div class="feedback-thread-toolbar">
+  <a class="btn btn-line" href="{% url 'portal_feedback_inbox' %}">← Hộp thư</a>
+  <form method="post" data-feedback-action>{% csrf_token %}<button class="btn btn-ghost" type="submit" name="action" value="mark_read">Đánh dấu đã đọc</button></form>
+  <form method="post" data-feedback-action onsubmit="return confirm('Xóa hội thoại này và toàn bộ tin nhắn, ảnh đính kèm?')">{% csrf_token %}<button class="btn btn-danger" type="submit" name="action" value="delete">Xóa hội thoại</button></form>
+</div>
+<section class="feedback-staff-chat">
+  <div class="feedback-messages feedback-staff-messages">
+    {% for message in feedback_messages %}
+    {% include "manage/feedback/_message.html" %}
+    {% empty %}<p class="feedback-welcome" data-feedback-empty>Hội thoại chưa có nội dung.</p>{% endfor %}
+  </div>
+  <form method="post" enctype="multipart/form-data" class="feedback-staff-reply" data-feedback-reply>
+    {% csrf_token %}<input type="hidden" name="action" value="reply">
+    <input type="hidden" name="reply_to" value="">
+    <div class="feedback-reply-preview" hidden>
+      <div class="feedback-reply-preview-bar"></div>
+      <div class="feedback-reply-preview-content">
+        <div class="feedback-reply-preview-sender">Đang trả lời: <strong data-reply-sender></strong></div>
+        <div class="feedback-reply-preview-text" data-reply-text></div>
+      </div>
+      <button type="button" class="feedback-reply-cancel" aria-label="Hủy trả lời" title="Hủy trả lời">✕</button>
+    </div>
+    <label for="feedback-reply-body">Phản hồi người gửi</label>
+    <div class="feedback-emoji-row" aria-label="Chèn emoji vào phản hồi"><button type="button" data-feedback-emoji="🙂">🙂</button><button type="button" data-feedback-emoji="😊">😊</button><button type="button" data-feedback-emoji="👍">👍</button><button type="button" data-feedback-emoji="🙏">🙏</button><button type="button" data-feedback-emoji="❤️">❤️</button><button type="button" data-feedback-emoji="😅">😅</button></div>
+    <textarea id="feedback-reply-body" name="body" rows="2" maxlength="3000" placeholder="Nhập phản hồi..."></textarea>
+    <div><label class="feedback-staff-attach">Đính kèm ảnh <input type="file" name="image" accept="image/png,image/jpeg,image/webp" capture="environment"></label><span> · tối đa 5 MB</span><button class="btn btn-primary feedback-send" type="submit">Gửi phản hồi</button></div>
+  </form>
+</section>
+<div class="feedback-reaction-picker feedback-global-reaction-picker" id="feedback-reaction-picker" role="group" aria-label="Chọn emoji cảm xúc" hidden>
+  {% for emoji, label in reaction_choices %}<button type="button" class="feedback-reaction" data-reaction-value="{{ emoji }}" aria-label="{{ label }}" title="{{ label }}">{{ emoji }}</button>{% endfor %}
+</div>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'map_app/js/feedback-admin.js' %}?v=7" defer></script>{% endblock %}

@@ -5,11 +5,14 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView
+from django.core.exceptions import ValidationError
 from django.core.serializers import serialize
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
+from django.utils import timezone
 
 from .catalog import (
     ENTITIES,
@@ -21,7 +24,7 @@ from .catalog import (
     user_search_qs,
 )
 from .forms import HomepageBlockForm, PortalLoginForm, RegisterForm, RoleForm, UserCreateForm, UserUpdateForm
-from .models import Building, Campus, Floor, GreenArea, HomepageBlock, ParkingArea, Role, Room, Tree, UserProfile
+from .models import Building, Campus, FeedbackMessage, FeedbackReaction, FeedbackThread, Floor, GreenArea, HomepageBlock, ParkingArea, Role, Room, Tree, UserProfile
 from .permissions import (
     ADMIN_ROLE_NAME,
     can_access_portal,
@@ -111,6 +114,14 @@ def portal_home(request):
                 "url": reverse("portal_roles"),
             }
         )
+    if user_has_perm(request.user, "manage", "feedback"):
+        unread_feedback = FeedbackThread.objects.filter(staff_read_at__isnull=True).count()
+        stats.append({
+            "label": "Góp ý / Báo lỗi",
+            "value": FeedbackThread.objects.count(),
+            "hint": f"{unread_feedback} hội thoại chưa đọc",
+            "url": reverse("portal_feedback_inbox"),
+        })
     if user_has_perm(request.user, "add", "users"):
         quick_adds.append({"label": "Thêm người dùng", "url": reverse("portal_user_create")})
     campuses_geojson = serialize("geojson", Campus.objects.all())
@@ -439,6 +450,7 @@ def role_list(request):
 
 ROLE_GROUPS = [
     ("Cổng quản lý", ["can_access_portal"]),
+    ("Góp ý / Báo lỗi", ["can_manage_feedback"]),
     ("Người dùng", ["can_view_users", "can_add_users", "can_change_users", "can_delete_users"]),
     ("Vai trò", ["can_view_roles", "can_add_roles", "can_change_roles", "can_delete_roles"]),
     ("Cơ sở", ["can_view_campus", "can_add_campus", "can_change_campus", "can_delete_campus"]),
@@ -449,6 +461,178 @@ ROLE_GROUPS = [
     ("Mảng xanh", ["can_view_greenarea", "can_add_greenarea", "can_change_greenarea", "can_delete_greenarea"]),
     ("Cây xanh", ["can_view_tree", "can_add_tree", "can_change_tree", "can_delete_tree"]),
 ]
+
+
+def _feedback_permission_denied(request):
+    if not request.user.is_authenticated:
+        return redirect(f"{reverse('login')}?next={request.path}")
+    if not can_access_portal(request.user) or not user_has_perm(request.user, "manage", "feedback"):
+        messages.error(request, "Bạn không đủ quyền quản lý góp ý / báo lỗi.")
+        return redirect("portal_home" if can_access_portal(request.user) else "home")
+    return None
+
+
+def feedback_inbox(request):
+    denied = _feedback_permission_denied(request)
+    if denied:
+        return denied
+    q = request.GET.get("q", "").strip()
+    status = request.GET.get("status", "")
+    threads = FeedbackThread.objects.annotate(message_count=Count("messages")).order_by("-updated_at", "-pk")
+    if q:
+        threads = threads.filter(Q(username_snapshot__icontains=q) | Q(messages__body__icontains=q)).distinct()
+    if status == "unread":
+        threads = threads.filter(staff_read_at__isnull=True)
+    elif status == "read":
+        threads = threads.filter(staff_read_at__isnull=False)
+    page_obj = paginate(request, threads)
+    return render(request, "manage/feedback/inbox.html", {
+        "threads": page_obj.object_list,
+        "page_obj": page_obj,
+        "q": q,
+        "status": status,
+        "querystring": _querystring(request),
+        "unread_count": FeedbackThread.objects.filter(staff_read_at__isnull=True).count(),
+    })
+
+
+def feedback_unread_count_api(request):
+    denied = _feedback_permission_denied(request)
+    if denied:
+        return JsonResponse({"detail": "Bạn không đủ quyền."}, status=403)
+    return JsonResponse({"count": FeedbackThread.objects.filter(staff_read_at__isnull=True).count()})
+
+
+def _feedback_reaction_summary(message, user):
+    totals = {}
+    reacted = set()
+    for reaction in message.reactions.select_related("user").all():
+        totals[reaction.emoji] = totals.get(reaction.emoji, 0) + 1
+        if reaction.user_id == user.pk:
+            reacted.add(reaction.emoji)
+    summary = [
+        {"emoji": emoji, "label": label, "count": totals.get(emoji, 0), "reacted": emoji in reacted}
+        for emoji, label in FeedbackReaction.Emoji.choices
+    ]
+    return summary, sum(totals.values())
+
+
+def feedback_thread_view(request, pk):
+    denied = _feedback_permission_denied(request)
+    if denied:
+        return denied
+    thread = get_object_or_404(FeedbackThread.objects.prefetch_related("messages__sender"), pk=pk)
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "react":
+            try:
+                message_id = int(request.POST.get("message_id", ""))
+            except (TypeError, ValueError):
+                message_id = None
+            message = get_object_or_404(thread.messages.all(), pk=message_id)
+            emoji = request.POST.get("emoji", "")
+            if emoji not in FeedbackReaction.Emoji.values:
+                messages.error(request, "Emoji không hợp lệ.")
+            else:
+                reaction, created = FeedbackReaction.objects.get_or_create(message=message, user=request.user, emoji=emoji)
+                if not created:
+                    reaction.delete()
+                thread.staff_read_at = timezone.now()
+                thread.save(update_fields=["staff_read_at"])
+                if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    reaction_summary, reaction_total = _feedback_reaction_summary(message, request.user)
+                    return JsonResponse({
+                        "reaction_summary": reaction_summary,
+                        "reaction_total": reaction_total,
+                    })
+            return redirect("portal_feedback_thread", pk=thread.pk)
+        if action == "mark_read":
+            thread.staff_read_at = timezone.now()
+            thread.save(update_fields=["staff_read_at"])
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return JsonResponse({"ok": True})
+            messages.success(request, "Đã đánh dấu hội thoại là đã đọc.")
+            return redirect("portal_feedback_thread", pk=thread.pk)
+        if action == "delete":
+            for feedback_message in thread.messages.all():
+                if feedback_message.image:
+                    feedback_message.image.delete(save=False)
+            thread.delete()
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return JsonResponse({"redirect_url": reverse("portal_feedback_inbox")})
+            messages.success(request, "Đã xóa hội thoại và toàn bộ tin nhắn đính kèm.")
+            return redirect("portal_feedback_inbox")
+        if action == "delete_message":
+            try:
+                message_id = int(request.POST.get("message_id", ""))
+            except (TypeError, ValueError):
+                message_id = None
+            message = get_object_or_404(FeedbackMessage, pk=message_id, thread=thread)
+            if message.image:
+                message.image.delete(save=False)
+            message.delete()
+            thread.staff_read_at = timezone.now()
+            thread.save(update_fields=["staff_read_at", "updated_at"])
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return JsonResponse({"deleted": True, "empty": not thread.messages.exists()})
+            messages.success(request, "Đã xóa tin nhắn.")
+            return redirect("portal_feedback_thread", pk=thread.pk)
+        if action == "reply":
+            body = request.POST.get("body", "").strip()
+            image = request.FILES.get("image")
+            is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+            error = ""
+            if len(body) > 3000:
+                error = "Nội dung phản hồi tối đa 3.000 ký tự."
+            elif not body and not image:
+                error = "Hãy nhập nội dung hoặc đính kèm hình ảnh."
+            elif image and image.size > 5 * 1024 * 1024:
+                error = "Hình ảnh tối đa 5 MB."
+            else:
+                reply_to = None
+                reply_to_id = request.POST.get("reply_to")
+                if reply_to_id:
+                    try:
+                        reply_to = thread.messages.filter(pk=int(reply_to_id)).first()
+                    except (TypeError, ValueError):
+                        reply_to = None
+
+                message = FeedbackMessage(
+                    thread=thread,
+                    sender=request.user,
+                    sender_name=(request.user.get_full_name() or request.user.get_username())[:150],
+                    is_staff_reply=True,
+                    reply_to=reply_to,
+                    body=body,
+                    image=image or "",
+                )
+                try:
+                    message.full_clean()
+                    message.save()
+                    thread.user_read_at = None
+                    thread.staff_read_at = timezone.now()
+                    thread.save(update_fields=["user_read_at", "staff_read_at", "updated_at"])
+                    if is_ajax:
+                        message.reaction_summary, message.reaction_total = _feedback_reaction_summary(message, request.user)
+                        html = render_to_string("manage/feedback/_message.html", {"message": message}, request=request)
+                        return JsonResponse({"ok": True, "html": html})
+                    messages.success(request, "Đã gửi phản hồi.")
+                except ValidationError as exc:
+                    details = " ".join(str(error) for error in exc.messages)
+                    error = f"Chưa gửi được phản hồi: {details}"
+            if is_ajax:
+                return JsonResponse({"detail": error or "Chưa gửi được phản hồi."}, status=422)
+            if error:
+                messages.error(request, error)
+            return redirect("portal_feedback_thread", pk=thread.pk)
+    feedback_messages = list(thread.messages.prefetch_related("reactions").select_related("reply_to", "sender").all())
+    for feedback_message in feedback_messages:
+        feedback_message.reaction_summary, feedback_message.reaction_total = _feedback_reaction_summary(feedback_message, request.user)
+    return render(request, "manage/feedback/thread.html", {
+        "thread": thread,
+        "feedback_messages": feedback_messages,
+        "reaction_choices": FeedbackReaction.Emoji.choices,
+    })
 
 
 def _role_form_groups(form):

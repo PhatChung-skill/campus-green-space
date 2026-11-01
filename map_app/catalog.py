@@ -57,7 +57,7 @@ ENTITIES = {
         "title": "Tầng",
         "singular": "tầng",
         "pk_field": "floor_id",
-        "search_fields": ["name", "building__name"],
+        "search_fields": ["name", "building__name", "building__campus__name"],
         "select_related": ["building", "building__campus"],
         "list_fields": [("name", "Tên tầng"), ("level", "Cấp"), ("building", "Tòa nhà")],
         "geom_type": "polygon",
@@ -74,7 +74,14 @@ ENTITIES = {
         "title": "Phòng",
         "singular": "phòng",
         "pk_field": "room_id",
-        "search_fields": ["name", "floor__name", "floor__building__name"],
+        "search_fields": [
+            "name",
+            "floor__name",
+            "floor__building__name",
+            "floor__building__campus__name",
+            "room_type",
+        ],
+        "search_choice_fields": ["room_type"],
         "select_related": ["floor", "floor__building"],
         "list_fields": [("name", "Tên phòng"), ("room_type", "Loại"), ("floor", "Tầng")],
         "geom_type": "point",
@@ -180,6 +187,15 @@ def search_queryset(qs, cfg, q):
     query = Q()
     for field in cfg["search_fields"]:
         query |= Q(**{f"{field}__icontains": q})
+        if field in cfg.get("search_choice_fields", []):
+            choices = qs.model._meta.get_field(field).flatchoices
+            matching_values = [
+                value
+                for value, label in choices
+                if q.casefold() in str(label).casefold()
+            ]
+            if matching_values:
+                query |= Q(**{f"{field}__in": matching_values})
     return qs.filter(query)
 
 

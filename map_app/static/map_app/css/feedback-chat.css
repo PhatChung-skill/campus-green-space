@@ -1,0 +1,91 @@
+.feedback-chat { position:fixed; z-index:1600; right:24px; bottom:24px; font-family:"Be Vietnam Pro","Segoe UI",sans-serif; }
+.feedback-launcher { position:relative; display:flex; align-items:center; gap:10px; min-height:58px; padding:0 20px; border:0; border-radius:999px; background:#146b43; color:white; font-size:1rem; font-weight:750; box-shadow:0 12px 32px #0b3d2e38; cursor:pointer; }
+.feedback-launcher:hover { background:#0b5735; transform:translateY(-1px); }
+.feedback-launcher-label { font-size:.88rem; }
+.feedback-unread-dot { position:absolute; top:0; right:0; width:13px; height:13px; border:2px solid white; border-radius:50%; background:#f04438; }
+.feedback-panel { position:absolute; right:0; bottom:72px; display:flex; flex-direction:column; width:min(390px,calc(100vw - 32px)); height:min(580px,calc(100vh - 120px)); overflow:hidden; border:1px solid #d9e8dd; border-radius:20px; background:#fff; box-shadow:0 20px 55px #102e2030; }
+.feedback-panel[hidden], .feedback-launcher[hidden] { display:none; }
+.feedback-panel-head { display:flex; align-items:center; justify-content:space-between; padding:17px 19px; color:white; background:linear-gradient(120deg,#0b3d2e,#1f7a4d); }
+.feedback-panel-head strong,.feedback-panel-head small { display:block; }
+.feedback-panel-head strong { font-size:1rem; }
+.feedback-panel-head small { margin-top:4px; color:#d8eee0; font-size:.72rem; }
+.feedback-close { width:34px; height:34px; border:0; border-radius:50%; background:#ffffff20; color:white; font-size:1.5rem; line-height:1; cursor:pointer; }
+.feedback-category-wrap { display:flex; align-items:center; gap:10px; padding:10px 15px; border-bottom:1px solid #edf2ee; color:#527062; font-size:.78rem; }
+.feedback-category-wrap select { padding:5px 8px; border:1px solid #dce8df; border-radius:8px; color:#143028; background:white; font:inherit; }
+.feedback-messages { display:flex; flex:1; flex-direction:column; gap:10px; padding:15px; overflow:auto; background:#f5faf6; }
+.feedback-welcome { align-self:flex-start; max-width:90%; margin:0; padding:11px 13px; border:1px solid #e3eee6; border-radius:15px 15px 15px 4px; background:white; color:#496357; font-size:.82rem; line-height:1.55; }
+.feedback-message { max-width:87%; padding:10px 12px; border-radius:15px; background:#fff; color:#244638; box-shadow:0 2px 8px #0b3d2e0d; overflow-wrap:anywhere; }
+.feedback-message.is-mine { align-self:flex-end; border-radius:15px 15px 4px 15px; background:#dff2e5; }
+.feedback-message-body { margin:0; white-space:pre-wrap; font-size:.84rem; line-height:1.55; }
+.feedback-message-meta { display:block; margin-top:5px; color:#71877a; font-size:.64rem; }
+.feedback-message img { display:block; max-width:100%; max-height:220px; margin-top:7px; border-radius:10px; }
+.feedback-message-reactions { position:relative; display:block; width:max-content; max-width:100%; margin-top:6px; }
+.feedback-reaction-summary { display:flex; flex-wrap:wrap; align-items:center; gap:2px; width:max-content; max-width:100%; min-height:27px; padding:2px 5px; border:1px solid #dce8df; border-radius:999px; background:white; box-shadow:0 1px 4px #102e2014; }
+.feedback-reaction { display:inline-flex; align-items:center; gap:4px; min-height:26px; padding:3px 7px; border:1px solid #dce8df; border-radius:999px; background:white; color:#426052; font: .75rem "Be Vietnam Pro","Segoe UI",sans-serif; cursor:pointer; }
+.feedback-reaction:hover { border-color:#75b78b; background:#f0faf3; }
+.feedback-reaction.is-reacted { border-color:#55a874; background:#e3f4e8; color:#14532d; box-shadow:inset 0 0 0 1px #55a874; }
+.feedback-reaction-total { padding:0 3px; color:#526b5e; font-size:.68rem; font-weight:750; }
+.feedback-reaction-summary > .feedback-reaction { min-width:24px; min-height:24px; justify-content:center; padding:1px 3px; border-color:transparent; background:transparent; font-size:.95rem; }
+.feedback-reaction-summary > .feedback-reaction.is-reacted { border-color:transparent; background:#e3f4e8; box-shadow:none; }
+.feedback-reaction-add { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:27px; padding:2px 7px; border:1px solid #dce8df; border-radius:999px; background:#fff; color:#526b5e; font:600 .72rem "Be Vietnam Pro","Segoe UI",sans-serif; cursor:pointer; }
+.feedback-reaction-add:hover,.feedback-reaction-add[aria-expanded="true"] { border-color:#75b78b; background:#eaf6ed; color:#14532d; }
+.feedback-reaction-picker { position:absolute; z-index:3; left:0; bottom:calc(100% + 6px); display:flex; flex-wrap:wrap; gap:5px; width:max-content; max-width:min(230px,calc(100vw - 70px)); padding:8px; border:1px solid #dce8df; border-radius:14px; background:white; box-shadow:0 8px 24px #102e2030; }
+.feedback-reaction-picker[hidden] { display:none; }
+.feedback-reaction-picker .feedback-reaction { min-width:32px; min-height:32px; justify-content:center; padding:4px; border-color:transparent; font-size:1.1rem; }
+.feedback-global-reaction-picker { position:fixed; z-index:10000; bottom:auto; }
+.feedback-status { min-height:0; margin:0; padding:0 14px; color:#b42318; font-size:.75rem; }
+.feedback-status:not(:empty) { padding-top:7px; }
+.feedback-compose { padding:9px 12px 12px; border-top:1px solid #e8f0ea; }
+.feedback-emoji-row { display:flex; gap:7px; padding-bottom:8px; }
+.feedback-emoji-row button { padding:2px 4px; border:0; border-radius:6px; background:transparent; font-size:1rem; cursor:pointer; }
+.feedback-emoji-row button:hover { background:#edf6ef; }
+.feedback-compose textarea { display:block; width:100%; resize:vertical; min-height:48px; max-height:110px; padding:9px 10px; border:1px solid #dce8df; border-radius:11px; outline-color:#2f9e63; font: .82rem/1.5 "Be Vietnam Pro","Segoe UI",sans-serif; }
+.feedback-compose-tools { display:flex; align-items:center; gap:9px; margin-top:9px; }
+.feedback-attach { font-size:1.15rem; cursor:pointer; }
+.feedback-file-name { flex:1; overflow:hidden; color:#71877a; font-size:.68rem; text-overflow:ellipsis; white-space:nowrap; }
+.feedback-send { padding:8px 16px; border:0; border-radius:999px; background:#1f7a4d; color:white; font:700 .78rem "Be Vietnam Pro","Segoe UI",sans-serif; cursor:pointer; }
+.feedback-send:disabled { opacity:.55; cursor:wait; }
+.feedback-login-prompt { display:grid; flex:1; align-content:center; justify-items:center; gap:9px; padding:28px; text-align:center; }
+.feedback-login-prompt > span { font-size:2rem; }
+.feedback-login-prompt p { max-width:285px; margin:0; color:#526b5e; font-size:.88rem; line-height:1.65; }
+.feedback-login-prompt a { margin-top:5px; padding:9px 20px; border-radius:999px; background:#1f7a4d; color:white; font-size:.84rem; font-weight:700; text-decoration:none; }
+@media(max-width:520px) { .feedback-chat { right:14px; bottom:14px; } .feedback-launcher { width:58px; height:58px; min-height:58px; justify-content:center; padding:0; font-size:1.25rem; } .feedback-launcher-label { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); } .feedback-panel { bottom:70px; } }
+
+/* Zalo-style reply & quote styles */
+.feedback-quote-box { display:block; position:relative; max-width:100%; margin-bottom:7px; padding:5px 9px 5px 10px; background:#f1f5f9; border-left:3.5px solid #0068ff; border-radius:4px 8px 8px 4px; cursor:pointer; transition:background 0.15s ease, transform 0.1s ease; user-select:none; }
+.feedback-quote-box:hover { background:#e2e8f0; }
+.feedback-quote-box:active { transform:scale(0.99); }
+.feedback-message.is-mine .feedback-quote-box { background:rgba(0, 0, 0, 0.05); }
+.feedback-message.is-mine .feedback-quote-box:hover { background:rgba(0, 0, 0, 0.09); }
+.feedback-quote-inner { min-width:0; overflow:hidden; }
+.feedback-quote-sender { display:flex; align-items:center; gap:4px; margin-bottom:2px; font-size:0.73rem; font-weight:700; color:#1e293b; line-height:1.3; }
+.feedback-quote-icon { color:#0068ff; font-size:0.72rem; font-weight:800; }
+.feedback-quote-body { font-size:0.72rem; color:#64748b; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.feedback-reply-preview { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 10px; margin-bottom:8px; background:#f8fafc; border:1px solid #e2e8f0; border-left:3.5px solid #0068ff; border-radius:8px; animation:feedbackSlideIn 0.15s ease-out; }
+.feedback-reply-preview[hidden] { display:none !important; }
+.feedback-reply-preview-content { flex:1; min-width:0; }
+.feedback-reply-preview-sender { font-size:0.74rem; color:#0068ff; font-weight:600; line-height:1.3; }
+.feedback-reply-preview-sender strong { color:#1e293b; font-weight:700; }
+.feedback-reply-preview-text { font-size:0.72rem; color:#64748b; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:260px; }
+.feedback-reply-cancel { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; padding:0; border:0; border-radius:50%; background:transparent; color:#94a3b8; font-size:0.85rem; line-height:1; cursor:pointer; transition:all 0.15s ease; }
+.feedback-reply-cancel:hover { background:#fee2e2; color:#ef4444; }
+.feedback-message-actions-bar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.feedback-message.is-mine .feedback-message-actions-bar { justify-content:flex-end; }
+.feedback-message-subactions { display:flex; align-items:center; gap:6px; }
+.feedback-reply-btn { display:inline-flex !important; align-items:center; gap:4px; min-height:26px; padding:2px 10px; border:1px solid #dce8df; border-radius:999px; background:#ffffff; color:#374151; font:600 0.72rem "Be Vietnam Pro","Segoe UI",sans-serif; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.08); transition:all 0.15s ease; user-select:none; }
+.feedback-reply-btn:hover { border-color:#0068ff; background:#eff6ff; color:#0068ff; box-shadow:0 2px 6px rgba(0,104,255,0.18); }
+.feedback-message.is-mine .feedback-reply-btn { background:#ffffff; border-color:#b9e3ca; color:#14532d; }
+.feedback-message.is-mine .feedback-reply-btn:hover { border-color:#0068ff; background:#eff6ff; color:#0068ff; }
+.feedback-quote-mark { font-family:Georgia,serif; font-size:0.95rem; font-weight:800; color:#0068ff; line-height:1; }
+@keyframes feedbackHighlight {
+  0% { box-shadow:0 0 0 3px #0068ff, 0 4px 16px rgba(0, 104, 255, 0.35); }
+  50% { box-shadow:0 0 0 3px #0068ff, 0 4px 16px rgba(0, 104, 255, 0.35); }
+  100% { box-shadow:0 2px 8px rgba(11, 61, 46, 0.08); }
+}
+.feedback-message.is-highlighted { animation:feedbackHighlight 1.6s ease-out; }
+@keyframes feedbackSlideIn {
+  from { opacity:0; transform:translateY(-4px); }
+  to { opacity:1; transform:translateY(0); }
+}
+
+.feedback-message-author { margin-bottom:4px; font-size:0.75rem; font-weight:700; color:#146b43; line-height:1.2; }

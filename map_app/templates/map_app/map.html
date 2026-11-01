@@ -40,7 +40,13 @@ html,body{height:100%;overflow:hidden;font-family:"Be Vietnam Pro","Segoe UI",sa
 
 /* Layer chips */
 .sb-section{padding:14px 16px;border-bottom:1px solid #cde5d6;flex-shrink:0}
-.sb-section-title{font-size:11px;font-weight:700;color:#5c7468;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.sb-section-title{font-size:11px;font-weight:700;color:#5c7468;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:default}
+.layer-toggle-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border:1.5px solid #cde5d6;border-radius:6px;background:white;color:#5c7468;font-size:11px;line-height:1;cursor:pointer;flex-shrink:0;transition:all .15s;padding:0}
+.layer-toggle-btn:hover{border-color:#2f9e63;background:#eef7f1;color:#1f7a4d}
+.layer-grid.layer-collapsed{display:none}
+.layer-toggle-btn .toggle-arrow{display:inline-block;transition:transform .2s ease}
+.layer-toggle-btn.is-collapsed .toggle-arrow{transform:rotate(-90deg)}
+.layer-section-collapsed{padding-bottom:6px}
 .layer-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .layer-chip{display:flex;align-items:center;gap:7px;padding:7px 10px;border:1.5px solid #cde5d6;border-radius:10px;cursor:pointer;font-size:12.5px;font-weight:600;color:#1f7a4d;background:white;user-select:none;transition:all .15s}
 .layer-chip input{display:none}
@@ -532,7 +538,12 @@ html,body{height:100%;overflow:hidden;font-family:"Be Vietnam Pro","Segoe UI",sa
 
   <!-- Layer chips (ẩn khi đang drill-down) -->
   <div class="sb-section" id="layer-section">
-    <div class="sb-section-title">Lớp hiển thị</div>
+    <div class="sb-section-title">
+      <span>Lớp hiển thị</span>
+      <button type="button" id="layer-toggle-btn" class="layer-toggle-btn" title="Ẩn / Hiện lớp hiển thị" aria-expanded="true" aria-controls="layer-grid">
+        <span class="toggle-arrow">▾</span>
+      </button>
+    </div>
     <div class="layer-grid" id="layer-grid"></div>
   </div>
 
@@ -2190,6 +2201,27 @@ map.on('click', function() {
     syncCampusOptions();
   }
 
+})();
+</script>
+
+<script>
+(function() {
+  document.addEventListener('DOMContentLoaded', function() {
+    var btn = document.getElementById('layer-toggle-btn');
+    var grid = document.getElementById('layer-grid');
+    if (!btn || !grid) return;
+
+    var collapsed = false;
+
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      collapsed = !collapsed;
+      grid.classList.toggle('layer-collapsed', collapsed);
+      btn.classList.toggle('is-collapsed', collapsed);
+      btn.setAttribute('aria-expanded', String(!collapsed));
+      btn.title = collapsed ? 'Hiện lớp hiển thị' : 'Ẩn lớp hiển thị';
+    });
+  });
 })();
 </script>
 </body>

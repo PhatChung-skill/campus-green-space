@@ -7,7 +7,7 @@
     <title>{% block title %}Quản lý không gian xanh{% endblock %} · HCMUNRE</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'map_app/css/portal.css' %}">
+    <link rel="stylesheet" href="{% static 'map_app/css/portal.css' %}?v=feedback-chat-async-1">
     <link rel="stylesheet" href="{% static 'map_app/css/site-nav.css' %}">
     {% block extra_head %}{% endblock %}
 </head>
@@ -22,11 +22,12 @@
                 <a href="{% url 'map_view' %}">Bản đồ công khai</a>
                 {% if is_admin_role %}<a href="{% url 'homepage_content' %}" class="{% if 'homepage' in request.resolver_match.url_name %}is-active{% endif %}">Nội dung trang chủ</a>{% endif %}
             </div>
-            {% if nav_perms.users or nav_perms.roles %}
+            {% if nav_perms.users or nav_perms.roles or nav_perms.feedback %}
             <div class="nav-group">
                 <p class="nav-label">Hệ thống</p>
                 {% if nav_perms.users %}<a href="{% url 'portal_users' %}" class="{% if 'user' in request.resolver_match.url_name %}is-active{% endif %}">Người dùng</a>{% endif %}
                 {% if nav_perms.roles %}<a href="{% url 'portal_roles' %}" class="{% if 'role' in request.resolver_match.url_name %}is-active{% endif %}">Vai trò &amp; quyền</a>{% endif %}
+                {% if nav_perms.feedback %}<a href="{% url 'portal_feedback_inbox' %}" class="{% if 'feedback' in request.resolver_match.url_name %}is-active{% endif %}">Góp ý / Báo lỗi <span class="feedback-nav-badge" data-feedback-nav-badge{% if not feedback_unread_count %} hidden{% endif %}>{{ feedback_unread_count }}</span></a>{% endif %}
             </div>
             {% endif %}
             {% if nav_perms.campus or nav_perms.building or nav_perms.floor or nav_perms.room or nav_perms.parking %}
@@ -59,6 +60,7 @@
                     <p class="topbar-sub">{% block subtitle %}Cổng thông tin tra cứu không gian xanh khu vực trường học{% endblock %}</p>
                 </div>
             </div>
+            {% if nav_perms.feedback %}<a href="{% url 'portal_feedback_inbox' %}" class="feedback-new-alert" data-feedback-alert{% if not feedback_unread_count %} hidden{% endif %}><span class="feedback-alert-dot" aria-hidden="true"></span><strong>🔔 Tin nhắn mới</strong><span data-feedback-alert-count>{{ feedback_unread_count }}</span></a>{% endif %}
         </header>
 
         <main class="content">
@@ -72,6 +74,7 @@
     </div>
 </div>
 <script src="{% static 'map_app/js/portal.js' %}"></script>
+{% if nav_perms.feedback %}<script src="{% static 'map_app/js/feedback-notifications.js' %}?v=2" data-count-url="{% url 'portal_feedback_unread_count' %}" defer></script>{% endif %}
 {% block extra_js %}{% endblock %}
 </body>
 </html>

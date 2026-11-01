@@ -4,6 +4,9 @@ from . import portal_views
 
 urlpatterns = [
     path("", portal_views.portal_home, name="portal_home"),
+    path("gop-y-bao-loi/", portal_views.feedback_inbox, name="portal_feedback_inbox"),
+    path("api/gop-y-chua-doc/", portal_views.feedback_unread_count_api, name="portal_feedback_unread_count"),
+    path("gop-y-bao-loi/<int:pk>/", portal_views.feedback_thread_view, name="portal_feedback_thread"),
     path("noi-dung-trang-chu/", portal_views.homepage_content_view, name="homepage_content"),
     path("noi-dung-trang-chu/them/<slug:kind>/", portal_views.homepage_block_create_view, name="homepage_block_create"),
     path("noi-dung-trang-chu/<int:pk>/sua/", portal_views.homepage_block_edit_view, name="homepage_block_edit"),
