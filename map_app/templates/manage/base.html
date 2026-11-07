@@ -7,7 +7,7 @@
     <title>{% block title %}Quản lý không gian xanh{% endblock %} · HCMUNRE</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'map_app/css/portal.css' %}?v=feedback-chat-async-1">
+    <link rel="stylesheet" href="{% static 'map_app/css/portal.css' %}?v=feedback-chat-async-1-password-toggle">
     <link rel="stylesheet" href="{% static 'map_app/css/site-nav.css' %}">
     {% block extra_head %}{% endblock %}
 </head>
@@ -74,6 +74,7 @@
     </div>
 </div>
 <script src="{% static 'map_app/js/portal.js' %}"></script>
+<script src="{% static 'map_app/js/password-toggle.js' %}" defer></script>
 {% if nav_perms.feedback %}<script src="{% static 'map_app/js/feedback-notifications.js' %}?v=2" data-count-url="{% url 'portal_feedback_unread_count' %}" defer></script>{% endif %}
 {% block extra_js %}{% endblock %}
 </body>

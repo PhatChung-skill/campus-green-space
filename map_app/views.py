@@ -3,16 +3,19 @@ import mimetypes
 import re
 import unicodedata
 
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.serializers import serialize
 from django.db.models import Prefetch, Q
 from django.http import FileResponse, Http404, JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
+from .forms import PersonalPasswordChangeForm
 from .models import Building, Campus, FeedbackMessage, FeedbackReaction, FeedbackThread, Floor, GreenArea, HomepageBlock, HomepageFeatureGroup, ParkingArea, Room, Tree
 from .permissions import can_access_portal, user_has_perm
 
@@ -187,7 +190,35 @@ def feedback_image(request, pk):
 @login_required
 def account_view(request):
     profile = getattr(request.user, "profile", None)
-    return render(request, "map_app/account.html", {"profile": profile})
+    is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+    password_form = PersonalPasswordChangeForm(
+        request.user,
+        data=request.POST if request.method == "POST" else None,
+    )
+    if request.method == "POST":
+        if password_form.is_valid():
+            user = password_form.save()
+            update_session_auth_hash(request, user)
+            if is_ajax:
+                return JsonResponse({"ok": True, "message": "Đổi mật khẩu thành công."})
+            messages.success(request, "Đổi mật khẩu thành công.")
+            return redirect("account")
+        if is_ajax:
+            return JsonResponse(
+                {
+                    "ok": False,
+                    "errors": {
+                        field: [str(error) for error in errors]
+                        for field, errors in password_form.errors.items()
+                    },
+                },
+                status=422,
+            )
+    return render(
+        request,
+        "map_app/account.html",
+        {"profile": profile, "password_form": password_form},
+    )
 
 
 def map_view(request):

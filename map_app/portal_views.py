@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView
 from django.core.exceptions import ValidationError
 from django.core.serializers import serialize
+from django.db import transaction
 from django.db.models import Count, Q
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -415,7 +416,9 @@ def user_delete(request, pk):
         return redirect("portal_users")
     if request.method == "POST":
         username = user.username
-        user.delete()
+        with transaction.atomic():
+            FeedbackThread.objects.filter(user=user).delete()
+            user.delete()
         messages.success(request, f"Đã xóa tài khoản {username}.")
         return redirect("portal_users")
     return render(

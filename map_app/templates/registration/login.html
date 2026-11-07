@@ -7,8 +7,9 @@
     {% load static %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'map_app/css/portal.css' %}">
+    <link rel="stylesheet" href="{% static 'map_app/css/portal.css' %}?v=password-toggle-1">
     <link rel="stylesheet" href="{% static 'map_app/css/site-nav.css' %}">
+    <script src="{% static 'map_app/js/password-toggle.js' %}" defer></script>
 </head>
 <body>
     {% include "map_app/_site_nav.html" %}

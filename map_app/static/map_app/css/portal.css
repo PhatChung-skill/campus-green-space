@@ -501,6 +501,55 @@ select:focus {
   border-color: var(--leaf);
 }
 
+.password-toggle-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.password-toggle-wrap > input[type="password"],
+.password-toggle-wrap > input[type="text"] {
+  padding-right: 48px;
+}
+
+.password-toggle-button {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.password-toggle-button:hover {
+  background: #ecfdf3;
+  color: var(--forest);
+}
+
+.password-toggle-button:focus-visible {
+  outline: 2px solid #86efac;
+  outline-offset: 1px;
+}
+
+.password-toggle-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
 .errorlist {
   color: var(--danger);
   list-style: none;

@@ -1,5 +1,7 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.exceptions import ValidationError
@@ -32,12 +34,97 @@ IMAGE_WIDGET = {"class": "form-control-file"}
 
 
 class PortalLoginForm(AuthenticationForm):
+    error_messages = {
+        **AuthenticationForm.error_messages,
+        "inactive": "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.",
+    }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["username"].widget.attrs.update({**INPUT_CLASS, "placeholder": "Tên đăng nhập"})
         self.fields["password"].widget.attrs.update({**INPUT_CLASS, "placeholder": "Mật khẩu"})
         self.fields["username"].label = "Tên đăng nhập"
         self.fields["password"].label = "Mật khẩu"
+
+    def clean(self):
+        try:
+            return super().clean()
+        except ValidationError:
+            username = self.cleaned_data.get("username")
+            password = self.cleaned_data.get("password")
+            if username and password:
+                user_model = get_user_model()
+                try:
+                    user = user_model._default_manager.get_by_natural_key(username)
+                except user_model.DoesNotExist:
+                    user = None
+                if user and not user.is_active and user.check_password(password):
+                    raise ValidationError(self.error_messages["inactive"], code="inactive")
+            raise
+
+
+class PersonalPasswordChangeForm(PasswordChangeForm):
+    """Đổi mật khẩu cá nhân sau khi xác minh mật khẩu hiện tại."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["old_password"].label = "Mật khẩu hiện tại"
+        self.fields["old_password"].error_messages["required"] = "Vui lòng nhập mật khẩu hiện tại."
+        self.fields["old_password"].widget.attrs.update(
+            {**INPUT_CLASS, "placeholder": "Nhập mật khẩu hiện tại", "autocomplete": "current-password"}
+        )
+        self.fields["new_password1"].label = "Mật khẩu mới"
+        self.fields["new_password1"].error_messages["required"] = "Vui lòng nhập mật khẩu mới."
+        self.fields["new_password1"].widget.attrs.update(
+            {**INPUT_CLASS, "placeholder": "Nhập mật khẩu mới", "autocomplete": "new-password"}
+        )
+        self.fields["new_password2"].label = "Xác nhận mật khẩu mới"
+        self.fields["new_password2"].error_messages["required"] = "Vui lòng xác nhận mật khẩu mới."
+        self.fields["new_password2"].widget.attrs.update(
+            {**INPUT_CLASS, "placeholder": "Nhập lại mật khẩu mới", "autocomplete": "new-password"}
+        )
+
+    def clean_old_password(self):
+        try:
+            return super().clean_old_password()
+        except ValidationError as error:
+            raise ValidationError("Mật khẩu hiện tại không chính xác.", code="password_incorrect") from error
+
+    @staticmethod
+    def _vietnamese_password_errors(error):
+        localized_messages = []
+        for item in error.error_list:
+            params = item.params or {}
+            if item.code == "password_too_short":
+                minimum = params.get("min_length", 8)
+                message = f"Mật khẩu quá ngắn. Mật khẩu cần có ít nhất {minimum} ký tự."
+            elif item.code == "password_too_common":
+                message = "Mật khẩu này quá phổ biến. Hãy chọn mật khẩu khó đoán hơn."
+            elif item.code == "password_entirely_numeric":
+                message = "Mật khẩu không được chỉ gồm chữ số."
+            elif item.code == "password_too_similar":
+                message = "Mật khẩu không được quá giống với thông tin cá nhân của bạn."
+            else:
+                message = "Mật khẩu chưa đáp ứng yêu cầu bảo mật. Vui lòng chọn mật khẩu khác."
+            localized_messages.append(message)
+        return localized_messages
+
+    def validate_passwords(self, password1_field_name="password1", password2_field_name="password2"):
+        password1 = self.cleaned_data.get(password1_field_name)
+        password2 = self.cleaned_data.get(password2_field_name)
+        if password1 and password2 and password1 != password2:
+            self.add_error(password2_field_name, ValidationError(
+                "Mật khẩu mới nhập lại không khớp.", code="password_mismatch"
+            ))
+
+    def validate_password_for_user(self, user, password_field_name="password2"):
+        password = self.cleaned_data.get(password_field_name)
+        if not password:
+            return
+        try:
+            validate_password(password, user)
+        except ValidationError as error:
+            self.add_error(password_field_name, self._vietnamese_password_errors(error))
 
 
 class HomepageBlockForm(forms.ModelForm):
@@ -503,11 +590,6 @@ class UserCreateForm(forms.ModelForm):
         label="Vai trò",
         widget=forms.Select(attrs=SELECT_CLASS),
     )
-    phone = forms.CharField(
-        required=False,
-        label="Số điện thoại",
-        widget=forms.TextInput(attrs=INPUT_CLASS),
-    )
     notes = forms.CharField(
         required=False,
         label="Ghi chú",
@@ -549,7 +631,6 @@ class UserCreateForm(forms.ModelForm):
             user.save()
             profile, _ = UserProfile.objects.get_or_create(user=user)
             profile.role = role
-            profile.phone = self.cleaned_data.get("phone", "")
             profile.notes = self.cleaned_data.get("notes", "")
             profile.save()
         return user
@@ -571,11 +652,6 @@ class UserUpdateForm(forms.ModelForm):
         required=True,
         label="Vai trò",
         widget=forms.Select(attrs=SELECT_CLASS),
-    )
-    phone = forms.CharField(
-        required=False,
-        label="Số điện thoại",
-        widget=forms.TextInput(attrs=INPUT_CLASS),
     )
     notes = forms.CharField(
         required=False,
@@ -606,7 +682,6 @@ class UserUpdateForm(forms.ModelForm):
         profile = getattr(self.instance, "profile", None)
         if profile:
             self.fields["role"].initial = profile.role_id
-            self.fields["phone"].initial = profile.phone
             self.fields["notes"].initial = profile.notes
 
     def clean(self):
@@ -629,7 +704,6 @@ class UserUpdateForm(forms.ModelForm):
             user.save()
             profile, _ = UserProfile.objects.get_or_create(user=user)
             profile.role = role
-            profile.phone = self.cleaned_data.get("phone", "")
             profile.notes = self.cleaned_data.get("notes", "")
             profile.save()
         return user
