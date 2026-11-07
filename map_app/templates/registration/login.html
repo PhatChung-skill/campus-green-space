@@ -32,6 +32,7 @@
                 <label for="id_password">Mật khẩu</label>
                 {{ form.password }}
                 {{ form.password.errors }}
+                <div style="text-align:right;margin-top:6px"><a href="{% url 'password_reset_request' %}">Quên mật khẩu?</a></div>
             </div>
             <button class="btn btn-primary" type="submit" style="width:100%">Vào hệ thống</button>
         </form>

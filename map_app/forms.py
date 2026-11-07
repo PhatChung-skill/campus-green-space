@@ -760,3 +760,80 @@ class RegisterForm(forms.ModelForm):
             user.save()
             # Signal ensure_user_profile sẽ tự tạo profile với role "Khách"
         return user
+
+
+class PasswordResetRequestForm(forms.Form):
+    email = forms.EmailField(
+        label="Email tài khoản",
+        error_messages={
+            "required": "Vui lòng nhập email tài khoản.",
+            "invalid": "Vui lòng nhập địa chỉ email hợp lệ.",
+        },
+        widget=forms.EmailInput(attrs={**INPUT_CLASS, "autocomplete": "email", "placeholder": "email@example.com"}),
+    )
+
+    def clean_email(self):
+        return self.cleaned_data["email"].strip()
+
+
+class PasswordResetConfirmForm(forms.Form):
+    otp = forms.RegexField(
+        regex=r"^\d{6}$",
+        label="Mã OTP 6 chữ số",
+        error_messages={
+            "required": "Vui lòng nhập mã OTP.",
+            "invalid": "Vui lòng nhập mã OTP gồm đúng 6 chữ số.",
+        },
+        widget=forms.TextInput(attrs={
+            **INPUT_CLASS,
+            "inputmode": "numeric",
+            "autocomplete": "one-time-code",
+            "maxlength": "6",
+            "placeholder": "Nhập mã OTP",
+        }),
+    )
+    new_password1 = forms.CharField(
+        label="Mật khẩu mới",
+        error_messages={"required": "Vui lòng nhập mật khẩu mới."},
+        widget=forms.PasswordInput(attrs={**INPUT_CLASS, "autocomplete": "new-password"}),
+    )
+    new_password2 = forms.CharField(
+        label="Nhập lại mật khẩu mới",
+        error_messages={"required": "Vui lòng nhập lại mật khẩu mới."},
+        widget=forms.PasswordInput(attrs={**INPUT_CLASS, "autocomplete": "new-password"}),
+    )
+
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_new_password1(self):
+        password = self.cleaned_data["new_password1"]
+        try:
+            validate_password(password, user=self.user)
+        except ValidationError as error:
+            messages = []
+            for item in error.error_list:
+                code = item.code
+                if code == "password_too_short":
+                    minimum = item.params.get("min_length", 8)
+                    message = f"Mật khẩu quá ngắn. Mật khẩu phải có ít nhất {minimum} ký tự."
+                elif code == "password_too_common":
+                    message = "Mật khẩu này quá phổ biến. Vui lòng chọn mật khẩu khó đoán hơn."
+                elif code == "password_entirely_numeric":
+                    message = "Mật khẩu không được chỉ gồm chữ số."
+                elif code == "password_too_similar":
+                    message = "Mật khẩu quá giống thông tin tài khoản của bạn. Vui lòng chọn mật khẩu khác."
+                else:
+                    message = "Mật khẩu chưa đáp ứng yêu cầu bảo mật. Vui lòng chọn mật khẩu khác."
+                messages.append(ValidationError(message, code=code))
+            raise ValidationError(messages)
+        return password
+
+    def clean(self):
+        cleaned = super().clean()
+        password1 = cleaned.get("new_password1")
+        password2 = cleaned.get("new_password2")
+        if password1 and password2 and password1 != password2:
+            self.add_error("new_password2", "Hai mật khẩu không khớp.")
+        return cleaned

@@ -16,7 +16,7 @@
     <main class="auth-page">
     <div class="auth-card" style="max-width:480px">
         <h1>Tạo tài khoản</h1>
-        <p class="lead">Điền thông tin bên dưới để đăng ký. Tài khoản mới sẽ có vai trò <strong>Khách</strong>.</p>
+        <p class="lead">Điền thông tin để nhận mã OTP 6 chữ số qua email. Tài khoản chỉ được tạo sau khi bạn xác thực mã. Vai trò mặc định là <strong>Khách</strong>.</p>
 
         {% if messages %}
             {% for message in messages %}
@@ -60,7 +60,7 @@
                 {{ form.password2 }}
                 {{ form.password2.errors }}
             </div>
-            <button class="btn btn-primary" type="submit" style="width:100%">Tạo tài khoản</button>
+            <button class="btn btn-primary" type="submit" style="width:100%">Gửi mã xác thực</button>
         </form>
 
         <p style="text-align:center;margin:18px 0 0">

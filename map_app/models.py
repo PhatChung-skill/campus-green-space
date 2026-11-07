@@ -240,6 +240,50 @@ class UserProfile(models.Model):
         return self.user.get_username()
 
 
+class PendingEmailRegistration(models.Model):
+    """Temporary registration data, removed when the email is verified or expires."""
+
+    email = models.EmailField(db_index=True)
+    registration_data = models.JSONField()
+    otp_hash = models.CharField(max_length=128)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    last_sent_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)
+    resend_count = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Đăng ký chờ xác minh email"
+        verbose_name_plural = "Đăng ký chờ xác minh email"
+
+    def __str__(self):
+        return f"{self.email} (chờ xác minh)"
+
+
+class PasswordResetOTP(models.Model):
+    """Short-lived, hashed one-time code for resetting an existing account password."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="password_reset_otps",
+        verbose_name="Tài khoản",
+    )
+    otp_hash = models.CharField(max_length=128)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    last_sent_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)
+    resend_count = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Mã OTP đặt lại mật khẩu"
+        verbose_name_plural = "Mã OTP đặt lại mật khẩu"
+
+    def __str__(self):
+        return f"OTP đặt lại mật khẩu cho {self.user.get_username()}"
+
+
 class HomepageFeatureGroup(models.Model):
     title = models.CharField(max_length=220, unique=True, verbose_name="Tiêu đề nhóm tiện ích")
     sort_order = models.PositiveIntegerField(default=0, verbose_name="Thứ tự hiển thị")

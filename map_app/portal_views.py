@@ -1,13 +1,19 @@
 import json
+import logging
+import re
+import secrets
+from datetime import timedelta
 
 from django.contrib.auth import login as auth_login
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView
+from django.contrib.auth.hashers import check_password, make_password
 from django.core.exceptions import ValidationError
+from django.core.mail import send_mail
 from django.core.serializers import serialize
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -24,8 +30,17 @@ from .catalog import (
     search_queryset,
     user_search_qs,
 )
-from .forms import HomepageBlockForm, PortalLoginForm, RegisterForm, RoleForm, UserCreateForm, UserUpdateForm
-from .models import Building, Campus, FeedbackMessage, FeedbackReaction, FeedbackThread, Floor, GreenArea, HomepageBlock, ParkingArea, Role, Room, Tree, UserProfile
+from .forms import (
+    HomepageBlockForm,
+    PasswordResetConfirmForm,
+    PasswordResetRequestForm,
+    PortalLoginForm,
+    RegisterForm,
+    RoleForm,
+    UserCreateForm,
+    UserUpdateForm,
+)
+from .models import Building, Campus, FeedbackMessage, FeedbackReaction, FeedbackThread, Floor, GreenArea, HomepageBlock, ParkingArea, PasswordResetOTP, PendingEmailRegistration, Role, Room, Tree, UserProfile
 from .permissions import (
     ADMIN_ROLE_NAME,
     can_access_portal,
@@ -34,6 +49,8 @@ from .permissions import (
     portal_required,
     user_has_perm,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class PortalLoginView(LoginView):
@@ -833,13 +850,272 @@ def dashboard_view(request):
 
 
 def register_view(request):
-    """Trang đăng ký tài khoản công khai. Role mặc định là 'Khách'."""
+    """Start public registration; the User row is created only after email OTP verification."""
     if request.user.is_authenticated:
         return redirect("home")
     form = RegisterForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        user = form.save()
-        auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
-        messages.success(request, "Đăng ký thành công. Chào mừng bạn đến với HCMUNRE WebGIS!")
-        return redirect("home")
+        user = form.save(commit=False)
+        otp = f"{secrets.randbelow(1_000_000):06d}"
+        now = timezone.now()
+        challenge = PendingEmailRegistration(
+            email=user.email,
+            registration_data={
+                "username": user.username,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                # Django's salted password hash is stored; the plain password is never persisted.
+                "password": user.password,
+            },
+            otp_hash=make_password(otp),
+            expires_at=now + timedelta(minutes=10),
+            last_sent_at=now,
+        )
+        try:
+            send_mail(
+                subject="Mã xác thực đăng ký HCMUNRE WebGIS",
+                message=(
+                    f"Mã xác thực email của bạn là: {otp}\n\n"
+                    "Mã có hiệu lực trong 10 phút. Nếu bạn không thực hiện đăng ký, hãy bỏ qua email này."
+                ),
+                from_email=None,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+        except Exception:
+            form.add_error(None, "Chưa gửi được email xác thực. Vui lòng thử lại sau hoặc kiểm tra cấu hình email.")
+        else:
+            # A newer registration for this address invalidates any older pending code.
+            PendingEmailRegistration.objects.filter(expires_at__lte=now).delete()
+            PendingEmailRegistration.objects.filter(email__iexact=user.email).delete()
+            challenge.save()
+            request.session["pending_email_registration_id"] = challenge.pk
+            return redirect("verify_registration_email")
     return render(request, "registration/register.html", {"form": form})
+
+
+def verify_registration_email_view(request):
+    if request.user.is_authenticated:
+        return redirect("home")
+    challenge_id = request.session.get("pending_email_registration_id")
+    challenge = PendingEmailRegistration.objects.filter(pk=challenge_id).first() if challenge_id else None
+    if challenge is None:
+        messages.info(request, "Bắt đầu đăng ký để nhận mã xác thực email.")
+        return redirect("register")
+
+    error = ""
+    if request.method == "POST":
+        otp = request.POST.get("otp", "").strip()
+        now = timezone.now()
+        if now >= challenge.expires_at:
+            challenge.delete()
+            request.session.pop("pending_email_registration_id", None)
+            error = "Mã xác thực đã hết hạn. Vui lòng đăng ký lại để nhận mã mới."
+        elif challenge.attempts >= 5:
+            challenge.delete()
+            request.session.pop("pending_email_registration_id", None)
+            error = "Bạn đã nhập sai quá số lần cho phép. Vui lòng đăng ký lại."
+        elif not re.fullmatch(r"\d{6}", otp):
+            error = "Vui lòng nhập mã OTP gồm đúng 6 chữ số."
+        elif not check_password(otp, challenge.otp_hash):
+            challenge.attempts += 1
+            challenge.save(update_fields=["attempts"])
+            error = f"Mã xác thực không đúng. Bạn còn {max(0, 5 - challenge.attempts)} lần thử."
+        elif User.objects.filter(email__iexact=challenge.email).exists():
+            challenge.delete()
+            request.session.pop("pending_email_registration_id", None)
+            error = "Email này đã được đăng ký. Vui lòng đăng nhập bằng tài khoản hiện có."
+        else:
+            data = challenge.registration_data
+            try:
+                user = User.objects.create(
+                    username=data["username"],
+                    first_name=data["first_name"],
+                    last_name=data["last_name"],
+                    email=challenge.email,
+                    password=data["password"],
+                )
+            except (IntegrityError, KeyError):
+                challenge.delete()
+                request.session.pop("pending_email_registration_id", None)
+                error = "Tên đăng nhập đã được sử dụng. Vui lòng đăng ký lại với tên khác."
+            else:
+                challenge.delete()
+                request.session.pop("pending_email_registration_id", None)
+                auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+                messages.success(request, "Email đã được xác thực. Đăng ký thành công, chào mừng bạn!")
+                return redirect("home")
+
+    return render(request, "registration/verify_email.html", {"email": challenge.email, "error": error})
+
+
+def resend_registration_otp_view(request):
+    if request.method != "POST":
+        return redirect("verify_registration_email")
+    challenge_id = request.session.get("pending_email_registration_id")
+    challenge = PendingEmailRegistration.objects.filter(pk=challenge_id).first() if challenge_id else None
+    if challenge is None:
+        return redirect("register")
+    now = timezone.now()
+    if challenge.resend_count >= 3:
+        messages.error(request, "Bạn đã yêu cầu gửi lại mã quá số lần. Vui lòng đăng ký lại sau.")
+    elif now - challenge.last_sent_at < timedelta(seconds=60):
+        messages.error(request, "Vui lòng đợi 60 giây trước khi yêu cầu gửi mã mới.")
+    else:
+        otp = f"{secrets.randbelow(1_000_000):06d}"
+        try:
+            send_mail(
+                "Mã xác thực đăng ký HCMUNRE WebGIS",
+                f"Mã xác thực email của bạn là: {otp}\n\nMã có hiệu lực trong 10 phút.",
+                None,
+                [challenge.email],
+                fail_silently=False,
+            )
+        except Exception:
+            messages.error(request, "Chưa gửi được email. Vui lòng thử lại sau hoặc kiểm tra cấu hình email.")
+        else:
+            challenge.otp_hash = make_password(otp)
+            challenge.created_at = now
+            challenge.expires_at = now + timedelta(minutes=10)
+            challenge.last_sent_at = now
+            challenge.attempts = 0
+            challenge.resend_count += 1
+            challenge.save(update_fields=["otp_hash", "created_at", "expires_at", "last_sent_at", "attempts", "resend_count"])
+            messages.success(request, "Đã gửi mã xác thực mới đến email của bạn.")
+    return redirect("verify_registration_email")
+
+
+def password_reset_request_view(request):
+    """Send a short-lived OTP without disclosing whether the email is registered."""
+    if request.user.is_authenticated:
+        return redirect("home")
+    form = PasswordResetRequestForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        email = form.cleaned_data["email"]
+        now = timezone.now()
+        request.session.pop("pending_password_reset_id", None)
+        user = User.objects.filter(email__iexact=email, is_active=True).first()
+
+        if user:
+            challenge = PasswordResetOTP.objects.filter(user=user).order_by("-created_at").first()
+            if challenge and challenge.expires_at > now:
+                # Reuse the active challenge so repeated form submissions cannot bypass resend limits.
+                request.session["pending_password_reset_id"] = challenge.pk
+                if challenge.resend_count < 3 and now - challenge.last_sent_at >= timedelta(seconds=60):
+                    otp = f"{secrets.randbelow(1_000_000):06d}"
+                    try:
+                        send_mail(
+                            "Mã OTP đặt lại mật khẩu HCMUNRE WebGIS",
+                            f"Mã OTP đặt lại mật khẩu của bạn là: {otp}\n\nMã có hiệu lực trong 10 phút.",
+                            None,
+                            [user.email],
+                            fail_silently=False,
+                        )
+                    except Exception:
+                        logger.exception("Could not send password reset OTP")
+                    else:
+                        challenge.otp_hash = make_password(otp)
+                        challenge.created_at = now
+                        challenge.expires_at = now + timedelta(minutes=10)
+                        challenge.last_sent_at = now
+                        challenge.attempts = 0
+                        challenge.resend_count += 1
+                        challenge.save(update_fields=["otp_hash", "created_at", "expires_at", "last_sent_at", "attempts", "resend_count"])
+            else:
+                if challenge:
+                    challenge.delete()
+                otp = f"{secrets.randbelow(1_000_000):06d}"
+                try:
+                    send_mail(
+                        "Mã OTP đặt lại mật khẩu HCMUNRE WebGIS",
+                        f"Mã OTP đặt lại mật khẩu của bạn là: {otp}\n\nMã có hiệu lực trong 10 phút.",
+                        None,
+                        [user.email],
+                        fail_silently=False,
+                    )
+                except Exception:
+                    logger.exception("Could not send password reset OTP")
+                else:
+                    challenge = PasswordResetOTP(
+                        user=user,
+                        otp_hash=make_password(otp),
+                        expires_at=now + timedelta(minutes=10),
+                        last_sent_at=now,
+                    )
+                    challenge.save()
+                    request.session["pending_password_reset_id"] = challenge.pk
+
+        messages.success(request, "Nếu email thuộc một tài khoản đang hoạt động, mã OTP sẽ được gửi đến email đó.")
+        return redirect("password_reset_verify")
+    return render(request, "registration/password_reset_request.html", {"form": form})
+
+
+def password_reset_verify_view(request):
+    if request.user.is_authenticated:
+        return redirect("home")
+    challenge_id = request.session.get("pending_password_reset_id")
+    challenge = PasswordResetOTP.objects.select_related("user").filter(pk=challenge_id).first() if challenge_id else None
+    form = PasswordResetConfirmForm(request.POST or None, user=challenge.user if challenge else None)
+    error = ""
+
+    if request.method == "POST":
+        if challenge is None:
+            error = "Mã OTP không đúng, không hợp lệ hoặc đã hết hạn. Hãy yêu cầu mã mới nếu cần."
+        elif timezone.now() >= challenge.expires_at:
+            challenge.delete()
+            request.session.pop("pending_password_reset_id", None)
+            error = "Mã OTP không đúng, không hợp lệ hoặc đã hết hạn. Hãy yêu cầu mã mới nếu cần."
+        elif challenge.attempts >= 5:
+            error = "Mã OTP không đúng, không hợp lệ hoặc đã hết hạn. Hãy yêu cầu mã mới nếu cần."
+        elif form.is_valid():
+            if not check_password(form.cleaned_data["otp"], challenge.otp_hash):
+                challenge.attempts += 1
+                challenge.save(update_fields=["attempts"])
+                error = "Mã OTP không đúng, không hợp lệ hoặc đã hết hạn. Hãy kiểm tra email hoặc yêu cầu mã mới."
+            else:
+                challenge.user.set_password(form.cleaned_data["new_password1"])
+                challenge.user.save(update_fields=["password"])
+                PasswordResetOTP.objects.filter(user=challenge.user).delete()
+                request.session.pop("pending_password_reset_id", None)
+                messages.success(request, "Đặt lại mật khẩu thành công. Hãy đăng nhập bằng mật khẩu mới.")
+                return redirect("login")
+
+    return render(
+        request,
+        "registration/password_reset_verify.html",
+        {"form": form, "email": challenge.user.email if challenge else "", "error": error},
+    )
+
+
+def password_reset_resend_otp_view(request):
+    if request.method != "POST":
+        return redirect("password_reset_verify")
+    challenge_id = request.session.get("pending_password_reset_id")
+    challenge = PasswordResetOTP.objects.select_related("user").filter(pk=challenge_id).first() if challenge_id else None
+    if challenge is None or not challenge.user.is_active:
+        messages.info(request, "Nếu có yêu cầu hợp lệ, mã mới sẽ được gửi khi đủ điều kiện.")
+        return redirect("password_reset_verify")
+
+    now = timezone.now()
+    if challenge.resend_count < 3 and now - challenge.last_sent_at >= timedelta(seconds=60):
+        otp = f"{secrets.randbelow(1_000_000):06d}"
+        try:
+            send_mail(
+                "Mã OTP đặt lại mật khẩu HCMUNRE WebGIS",
+                f"Mã OTP đặt lại mật khẩu của bạn là: {otp}\n\nMã có hiệu lực trong 10 phút.",
+                None,
+                [challenge.user.email],
+                fail_silently=False,
+            )
+        except Exception:
+            logger.exception("Could not resend password reset OTP")
+        else:
+            challenge.otp_hash = make_password(otp)
+            challenge.created_at = now
+            challenge.expires_at = now + timedelta(minutes=10)
+            challenge.last_sent_at = now
+            challenge.attempts = 0
+            challenge.resend_count += 1
+            challenge.save(update_fields=["otp_hash", "created_at", "expires_at", "last_sent_at", "attempts", "resend_count"])
+    messages.info(request, "Nếu có yêu cầu hợp lệ, mã mới sẽ được gửi khi đủ điều kiện.")
+    return redirect("password_reset_verify")
