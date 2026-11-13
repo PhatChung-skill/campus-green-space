@@ -971,3 +971,8 @@ def green_space_stats(request):
         },
         "campuses":      campuses_data,
     })
+
+
+def not_found_view(request, exception=None):
+    return render(request, "404.html", status=404)
+

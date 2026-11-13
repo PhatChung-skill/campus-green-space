@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.conf.urls.static import static
-from django.urls import include, path
+from django.urls import include, path, re_path
 from django.views.generic import RedirectView
 
 from map_app.portal_views import (
@@ -12,7 +12,7 @@ from map_app.portal_views import (
     resend_registration_otp_view,
     verify_registration_email_view,
 )
-from map_app.views import homepage_view
+from map_app.views import homepage_view, not_found_view
 
 urlpatterns = [
     path("admin/", RedirectView.as_view(pattern_name="homepage_content", permanent=False), name="custom_admin"),
@@ -31,3 +31,8 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Keep this last so valid application and development media URLs still resolve first.
+urlpatterns += [re_path(r"^.*$", not_found_view)]
+
+handler404 = "map_app.views.not_found_view"

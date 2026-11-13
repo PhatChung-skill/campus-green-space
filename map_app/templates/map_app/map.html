@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <title>Cổng Không gian xanh - HCMUNRE</title>
@@ -173,6 +173,65 @@ html,body{height:100%;overflow:hidden;font-family:"Be Vietnam Pro","Segoe UI",sa
     bottom: 72px;
     max-height: calc(100vh - 190px);
   }
+}
+
+/* Mobile map layout: floating search + bottom information sheet. */
+#mobile-sheet{display:contents}
+#mobile-sheet-handle{display:none}
+@media(max-width:768px){
+  html,body,#app{height:100%;height:100dvh;min-height:100%;}
+  #app{position:relative;display:block;width:100%;overflow:hidden}
+  #map-wrap{position:absolute;inset:0;width:100%;height:100%;}
+  #sidebar,#sidebar.open{position:absolute;inset:0;width:100%;min-width:0;height:100%;transform:none;border:0;background:transparent;overflow:visible;box-shadow:none;pointer-events:none;z-index:1100}
+  #sidebar>*{pointer-events:auto}
+  .sb-header{position:absolute;top:calc(env(safe-area-inset-top, 0px) + 78px);left:12px;right:12px;padding:8px 12px;background:rgba(255,255,255,.97);color:#16352a;border:1px solid #dcebe1;border-radius:16px;box-shadow:0 5px 20px rgba(11,61,46,.14)}
+  .sb-brand{display:none}
+  .sb-campus-wrap{display:flex;align-items:center;gap:8px}
+  .sb-campus-label{margin:0;color:#5c7468;white-space:nowrap;font-size:10px}
+  #campus-select{min-width:0;flex:1;padding:8px 34px 8px 10px;border-color:#cde5d6;border-radius:10px;background:#f7fbf8;color:#0b3d2e;font-size:12px}
+  .sb-campus-wrap::after{top:50%;right:10px;margin:0;color:#5c7468}
+  #search-section{position:absolute;top:calc(env(safe-area-inset-top, 0px) + 10px);left:12px;right:12px;padding:0;border:0;background:transparent;z-index:1100}
+  .search-wrap{min-height:54px;padding:10px 15px;border:1px solid #e1ece5;border-radius:999px;box-shadow:0 5px 22px rgba(11,61,46,.17)}
+  .search-icon{font-size:17px}
+  #search-input{font-size:15px}
+  #search-results{left:0;right:0;top:calc(100% + 8px);max-height:calc(100dvh - 235px);border-radius:16px;z-index:1200}
+  #mobile-sheet{position:absolute;left:0;right:0;bottom:env(safe-area-inset-bottom, 0px);height:var(--mobile-sheet-height, clamp(90px,13dvh,120px));max-height:calc(100dvh - 160px);display:flex;flex-direction:column;overflow:hidden;background:#fff;border:1px solid #dcebe1;border-bottom:0;border-radius:22px 22px 0 0;box-shadow:0 -8px 30px rgba(11,61,46,.16);z-index:950;transition:height .25s ease}
+  #mobile-sheet.dragging{transition:none}
+  #mobile-sheet-handle{display:grid;place-items:center;flex:0 0 26px;width:100%;padding:0;border:0;background:#fff;cursor:grab;touch-action:none}
+  #mobile-sheet-handle:active{cursor:grabbing}
+  #mobile-sheet-handle span{width:38px;height:4px;border-radius:999px;background:#c7d3cc}
+  #layer-section{padding:7px 12px 9px;border-bottom:1px solid #e8f0eb}
+  .sb-section-title{margin-bottom:6px;font-size:10px}
+  .layer-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .layer-chip{justify-content:flex-start;gap:5px;min-width:0;padding:6px 7px;font-size:10px;white-space:nowrap}
+  .layer-chip .chip-dot{width:8px;height:8px}
+  .drill-panel{flex:1;min-height:0;width:100%;overflow-y:auto;overscroll-behavior:contain}
+  #browse-panel{overflow-y:auto}
+  #detail-empty{min-height:84px;padding:10px 16px;gap:4px}
+  #detail-empty .empty-icon{font-size:27px}
+  #detail-empty p{font-size:11px;line-height:1.45}
+  #carousel-track{height:200px}
+  #carousel-track img{flex:0 0 100%;width:100%;min-width:100%;height:200px;object-fit:cover;background:#1a2e22}
+  .carousel-no-img{width:100%;height:180px}
+  #rdp-img-wrap{margin-bottom:10px}
+  #rdp-track{height:190px}
+  #rdp-track img{flex:0 0 100%;width:100%;min-width:100%;height:190px;object-fit:cover;background:#1a2e22}
+  #detail-body{padding:12px 14px 16px}
+  .detail-title{margin-bottom:10px;font-size:16px}
+  .detail-meta{gap:7px;margin-bottom:10px}
+  .detail-meta li{font-size:12px}
+  #building-panel .bp-img{max-height:200px}
+  #bp-track{height:190px}
+  #bp-track img{flex:0 0 100%;width:100%;min-width:100%;height:190px;object-fit:cover;background:#1a2e22}
+  .sb-footer{padding:8px 10px calc(8px + env(safe-area-inset-bottom, 0px));flex-wrap:nowrap;gap:6px}
+  .sb-footer .sb-home-link{flex-basis:0}
+  .sb-btn{min-width:0;padding:9px 6px;font-size:11px}
+  #sidebar-toggle{display:none}
+  .leaflet-top.leaflet-right{top:150px!important;right:10px!important}
+  #stats-toggle-btn{left:12px;right:auto;bottom:calc(var(--mobile-sheet-height, clamp(90px,13dvh,120px)) + 12px + env(safe-area-inset-bottom, 0px));padding:9px 12px;font-size:11px}
+  #stats-panel{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom, 0px));width:auto;max-height:82dvh;border-radius:18px;z-index:1250}
+  .sp-body{padding:12px}
+  .sp-chart-wrap{width:150px;height:150px}
 }
 
 /* ══ LIGHTBOX ══ */
@@ -496,6 +555,19 @@ html,body{height:100%;overflow:hidden;font-family:"Be Vietnam Pro","Segoe UI",sa
 }
 .sp-tree-sep { color: #86efac; font-weight: bold; }
 
+/* Re-apply mobile overrides after the base search and statistics styles below. */
+@media(max-width:768px){
+  #search-section{position:absolute;top:calc(env(safe-area-inset-top, 0px) + 10px);left:12px;right:12px;padding:0;border:0;background:transparent;z-index:1100}
+  .search-wrap{min-height:54px;padding:10px 15px;border:1px solid #e1ece5;border-radius:999px;box-shadow:0 5px 22px rgba(11,61,46,.17)}
+  .search-icon{font-size:17px}
+  #search-input{font-size:15px}
+  #search-results{left:0;right:0;top:calc(100% + 8px);max-height:calc(100dvh - 235px);border-radius:16px;z-index:1200}
+  #stats-toggle-btn{left:12px;right:auto;bottom:calc(var(--mobile-sheet-height, clamp(90px,13dvh,120px)) + 12px + env(safe-area-inset-bottom, 0px));padding:9px 12px;font-size:11px}
+  #stats-panel{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom, 0px));width:auto;max-height:82dvh;border-radius:18px;z-index:1250}
+  .sp-body{padding:12px}
+  .sp-chart-wrap{width:150px;height:150px}
+}
+
     </style>
 
 </head>
@@ -536,6 +608,8 @@ html,body{height:100%;overflow:hidden;font-family:"Be Vietnam Pro","Segoe UI",sa
     <div id="search-results"></div>
   </div>
 
+  <div id="mobile-sheet">
+    <button type="button" id="mobile-sheet-handle" aria-label="Mở rộng bảng thông tin" aria-expanded="false"><span></span></button>
   <!-- Layer chips (ẩn khi đang drill-down) -->
   <div class="sb-section" id="layer-section">
     <div class="sb-section-title">
@@ -639,6 +713,7 @@ html,body{height:100%;overflow:hidden;font-family:"Be Vietnam Pro","Segoe UI",sa
       <a class="sb-btn sb-btn-primary" href="{% url 'login' %}">Đăng nhập</a>
     {% endif %}
   </div>
+  </div>
 
 </aside>
 
@@ -690,6 +765,83 @@ var API_FLOORS = '{% url "public_floors" 0 %}'.replace('/0/', '/');
 var API_ROOMS  = '{% url "public_rooms"  0 %}'.replace('/0/', '/');
 
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+var mobileSheetState = 'peek';
+var mobileSheetDrag = null;
+var ignoreMobileSheetClick = false;
+
+function mobileSheetSnapHeight(state) {
+  var viewportHeight = window.innerHeight;
+  var maxHeight = Math.max(180, viewportHeight - 160);
+  var requested = state === 'full'
+    ? Math.min(viewportHeight - 160, viewportHeight * 0.90)
+    : state === 'half'
+      ? Math.min(480, viewportHeight * 0.58)
+      : Math.min(120, Math.max(90, viewportHeight * 0.13));
+  return Math.round(Math.min(requested, maxHeight));
+}
+
+function setMobileSheetHeight(height) {
+  document.getElementById('app').style.setProperty('--mobile-sheet-height', Math.round(height) + 'px');
+}
+
+function setMobileSheetState(state) {
+  var sheet = document.getElementById('mobile-sheet');
+  var handle = document.getElementById('mobile-sheet-handle');
+  if (!sheet || !handle || !window.matchMedia('(max-width: 768px)').matches) return;
+  mobileSheetState = state;
+  sheet.dataset.state = state;
+  setMobileSheetHeight(mobileSheetSnapHeight(state));
+  var expanded = state !== 'peek';
+  handle.setAttribute('aria-expanded', String(expanded));
+  handle.setAttribute('aria-label', state === 'full' ? 'Thu gọn bảng thông tin' : 'Mở rộng bảng thông tin');
+}
+
+function setMobileSheetExpanded(expanded) {
+  setMobileSheetState(expanded ? 'half' : 'peek');
+}
+
+var mobileSheetHandle = document.getElementById('mobile-sheet-handle');
+mobileSheetHandle.addEventListener('click', function() {
+  if (ignoreMobileSheetClick) { ignoreMobileSheetClick = false; return; }
+  setMobileSheetState(mobileSheetState === 'peek' ? 'half' : mobileSheetState === 'half' ? 'full' : 'peek');
+});
+mobileSheetHandle.addEventListener('pointerdown', function(e) {
+  if (!window.matchMedia('(max-width: 768px)').matches) return;
+  var sheet = document.getElementById('mobile-sheet');
+  mobileSheetDrag = { startY:e.clientY, startHeight:sheet.getBoundingClientRect().height, moved:false };
+  sheet.classList.add('dragging');
+  mobileSheetHandle.setPointerCapture(e.pointerId);
+});
+mobileSheetHandle.addEventListener('pointermove', function(e) {
+  if (!mobileSheetDrag) return;
+  var delta = mobileSheetDrag.startY - e.clientY;
+  if (Math.abs(delta) > 6) mobileSheetDrag.moved = true;
+  var height = Math.max(mobileSheetSnapHeight('peek'), Math.min(mobileSheetSnapHeight('full'), mobileSheetDrag.startHeight + delta));
+  setMobileSheetHeight(height);
+});
+function finishMobileSheetDrag() {
+  if (!mobileSheetDrag) return;
+  var sheet = document.getElementById('mobile-sheet');
+  sheet.classList.remove('dragging');
+  var height = sheet.getBoundingClientRect().height;
+  var peek = mobileSheetSnapHeight('peek');
+  var half = mobileSheetSnapHeight('half');
+  var full = mobileSheetSnapHeight('full');
+  var nextState = height < (peek + half) / 2 ? 'peek' : height < (half + full) / 2 ? 'half' : 'full';
+  ignoreMobileSheetClick = mobileSheetDrag.moved;
+  mobileSheetDrag = null;
+  setMobileSheetState(nextState);
+}
+mobileSheetHandle.addEventListener('pointerup', finishMobileSheetDrag);
+mobileSheetHandle.addEventListener('pointercancel', function() {
+  finishMobileSheetDrag();
+  ignoreMobileSheetClick = false;
+});
+window.addEventListener('resize', function() {
+  if (window.matchMedia('(max-width: 768px)').matches) setMobileSheetState(mobileSheetState);
+});
+setMobileSheetState('peek');
 
 /* ═══════════════════════════════════════
    MAP
@@ -747,6 +899,7 @@ function showPanel(name) {
   var inDrillDown = (name !== 'browse-panel');
   document.getElementById('layer-section').style.display = inDrillDown ? 'none' : 'block';
   document.getElementById('sidebar').classList.add('open');
+  setMobileSheetExpanded(inDrillDown);
 }
 
 /* ═══════════════════════════════════════
@@ -754,6 +907,7 @@ function showPanel(name) {
 ═══════════════════════════════════════ */
 var campusBoundsMap = {};
 var campusLayerRef  = null;
+var campusMarkerLayer = null;
 
 function buildCampusSelector(layer) {
   campusLayerRef = layer;
@@ -771,8 +925,35 @@ function buildCampusSelector(layer) {
   });
 }
 
+function syncCampusMapView(campusPk) {
+  var hasCampusSelection = Boolean(campusPk);
+  var campusChip = document.querySelector('.layer-chip[data-key="campus"] input');
+  var showCampusLayer = !campusChip || campusChip.checked;
+  var detailLayers = { building:buildings, green:greens, parking:parkings, tree:trees };
+
+  if (map.hasLayer(campuses)) map.removeLayer(campuses);
+  if (campusMarkerLayer && map.hasLayer(campusMarkerLayer)) map.removeLayer(campusMarkerLayer);
+
+  Object.keys(detailLayers).forEach(function(key) {
+    var layer = detailLayers[key];
+    var chip = document.querySelector('.layer-chip[data-key="'+key+'"] input');
+    if (map.hasLayer(layer)) map.removeLayer(layer);
+    if (hasCampusSelection && (!chip || chip.checked)) map.addLayer(layer);
+  });
+
+  if (showCampusLayer) {
+    var visibleCampusLayer = hasCampusSelection ? campuses : campusMarkerLayer;
+    if (visibleCampusLayer) map.addLayer(visibleCampusLayer);
+    if (hasCampusSelection && campuses.bringToBack) campuses.bringToBack();
+  }
+
+  if (hasCampusSelection && trees && map.hasLayer(trees)) trees.bringToFront();
+  layerMap.campus = hasCampusSelection ? campuses : campusMarkerLayer;
+}
+
 document.getElementById('campus-select').addEventListener('change', function() {
   var pk = this.value;
+  syncCampusMapView(pk);
   if (!pk) {
     if (campusLayerRef && campusLayerRef.getBounds().isValid())
       map.flyToBounds(campusLayerRef.getBounds(), { padding:[40,40], maxZoom:18, duration:1.2 });
@@ -878,6 +1059,7 @@ function buildCarousel(rawImgs, fallbackIcon) {
   var btnP  = document.getElementById('btn-prev');
   var btnN  = document.getElementById('btn-next');
   track.innerHTML = ''; dots.innerHTML = '';
+  track.style.transform = 'translateX(0)';
   if (!imgs.length) {
     track.style.height = '140px';
     track.innerHTML = '<div class="carousel-no-img" style="width:100%;height:140px">' + (fallbackIcon||'🗺️') + '</div>';
@@ -897,7 +1079,10 @@ function buildCarousel(rawImgs, fallbackIcon) {
   car.style.display = 'block'; renderCar();
 }
 function renderCar() {
-  document.getElementById('carousel-track').style.transform = 'translateX('+(-carIdx*320)+'px)';
+  var track = document.getElementById('carousel-track');
+  var image = track.querySelector('img');
+  var slideWidth = image && image.getBoundingClientRect().width || 320;
+  track.style.transform = 'translateX('+(-carIdx*slideWidth)+'px)';
   document.getElementById('carousel-dots').querySelectorAll('.carousel-dot').forEach(function(d,i){ d.classList.toggle('active',i===carIdx); });
 }
 function goSlide(idx) { carIdx=(idx+carImgs.length)%carImgs.length; renderCar(); }
@@ -924,6 +1109,7 @@ function showDetail(opts) {
     ul.appendChild(li);
   });
   document.getElementById('detail-body').style.display = 'block';
+  setMobileSheetExpanded(true);
 }
 
 function closeDetail() {
@@ -935,6 +1121,7 @@ function closeDetail() {
   document.getElementById('detail-empty').style.display = 'flex';
   document.getElementById('carousel').style.display = 'none';
   document.getElementById('detail-body').style.display = 'none';
+  setMobileSheetExpanded(false);
 }
 document.getElementById('detail-close').addEventListener('click', closeDetail);
 
@@ -952,6 +1139,7 @@ function buildBpCarousel(rawImgs) {
   var btnP  = document.getElementById('bp-prev');
   var btnN  = document.getElementById('bp-next');
   track.innerHTML = ''; dots.innerHTML = '';
+  track.style.transform = 'translateX(0)';
   if (!imgs.length) { wrap.style.display = 'none'; return; }
   imgs.forEach(function(src,i) {
     var img = document.createElement('img'); img.src = src; img.alt = 'Ảnh '+(i+1);
@@ -964,7 +1152,10 @@ function buildBpCarousel(rawImgs) {
 }
 function bpGoSlide(idx) {
   bpIdx = (idx+bpImgs.length)%bpImgs.length;
-  document.getElementById('bp-track').style.transform = 'translateX('+(-bpIdx*320)+'px)';
+  var track = document.getElementById('bp-track');
+  var image = track.querySelector('img');
+  var slideWidth = image && image.getBoundingClientRect().width || 320;
+  track.style.transform = 'translateX('+(-bpIdx*slideWidth)+'px)';
   document.getElementById('bp-dots').querySelectorAll('.carousel-dot').forEach(function(d,i){ d.classList.toggle('active',i===bpIdx); });
 }
 document.getElementById('bp-prev').addEventListener('click', function(){ bpGoSlide(bpIdx-1); });
@@ -1248,6 +1439,7 @@ function openRoomDetail(p, flName, bName, campusLabel) {
   var btnP  = document.getElementById('rdp-prev');
   var btnN  = document.getElementById('rdp-next');
   track.innerHTML = ''; dots.innerHTML = '';
+  track.style.transform = 'translateX(0)';
   if (imgs.length) {
     imgs.forEach(function(src,i){
       var img = document.createElement('img'); img.src=src; img.alt='Ảnh '+(i+1);
@@ -1281,11 +1473,19 @@ function openRoomDetail(p, flName, bName, campusLabel) {
 
 function rdpGoSlide(idx) {
   rdpIdx = (idx+rdpImgs.length)%rdpImgs.length;
-  document.getElementById('rdp-track').style.transform = 'translateX('+(-rdpIdx*288)+'px)';
+  var track = document.getElementById('rdp-track');
+  var image = track.querySelector('img');
+  var slideWidth = image && image.getBoundingClientRect().width || 288;
+  track.style.transform = 'translateX('+(-rdpIdx*slideWidth)+'px)';
   document.getElementById('rdp-dots').querySelectorAll('.carousel-dot').forEach(function(d,i){ d.classList.toggle('active',i===rdpIdx); });
 }
 document.getElementById('rdp-prev').addEventListener('click', function(){ rdpGoSlide(rdpIdx-1); });
 document.getElementById('rdp-next').addEventListener('click', function(){ rdpGoSlide(rdpIdx+1); });
+window.addEventListener('resize', function() {
+  if (carImgs.length) renderCar();
+  if (bpImgs.length) bpGoSlide(bpIdx);
+  if (rdpImgs.length) rdpGoSlide(rdpIdx);
+});
 
 /* ═══════════════════════════════════════
    LAYER CHIPS (5 base layers — không gồm Tầng & Phòng)
@@ -1320,7 +1520,7 @@ layerDefs.forEach(function(def) {
     if (cb.checked) {
       map.addLayer(lyr);
       // campus phải ở dưới building để building vẫn clickable
-      if (def.key === 'campus') lyr.bringToBack();
+      if (def.key === 'campus' && lyr.bringToBack) lyr.bringToBack();
       if (typeof trees !== 'undefined' && trees && map.hasLayer(trees)) trees.bringToFront();
     } else {
       map.removeLayer(lyr);
@@ -1353,6 +1553,26 @@ var campuses = L.geoJSON(campusData, {
 }).addTo(map);
 buildCampusSelector(campuses);
 registerLayer('campus', campuses);
+
+// Dùng chấm cơ sở ở chế độ tổng quan để tránh tooltip của cây ở xa khuôn viên.
+campusMarkerLayer = L.layerGroup();
+campuses.eachLayer(function(lyr) {
+  var feature = lyr.feature;
+  var pk = feature.id || feature.properties.pk;
+  var marker = L.circleMarker(lyr.getBounds().getCenter(), {
+    radius: 9, color: '#ffffff', weight: 3, fillColor: '#16834f', fillOpacity: 1,
+  });
+  var label = document.createElement('span');
+  label.textContent = '🏫 ' + (feature.properties.name || 'Cơ sở');
+  marker.bindTooltip(label, { direction:'top', offset:[0,-8], opacity:0.98 });
+  marker.on('click', function(e) {
+    L.DomEvent.stopPropagation(e);
+    var selector = document.getElementById('campus-select');
+    selector.value = String(pk);
+    selector.dispatchEvent(new Event('change', { bubbles:true }));
+  });
+  campusMarkerLayer.addLayer(marker);
+});
 
 // Buildings
 var buildings = L.geoJSON(buildingData, {
@@ -1437,6 +1657,9 @@ registerLayer('tree', trees);
 campuses.bringToBack();
 // Cây xanh ở trên cùng (z-order)
 if (typeof trees !== 'undefined' && trees) trees.bringToFront();
+
+// Khi chưa chọn cơ sở, chỉ hiển thị các chấm cơ sở trên bản đồ.
+syncCampusMapView('');
 
 /* Basemap control */
 L.control.layers({ '🗺️ Đường phố':streetLayer, '🛰️ Vệ tinh':satelliteLayer }, {}, { collapsed:true, position:'topright' }).addTo(map);
@@ -1674,6 +1897,7 @@ map.on('click', function() {
       var cs = document.getElementById('campus-select');
       if (cs && cs.querySelector('option[value="'+targetCampusPk+'"]')) {
         cs.value = String(targetCampusPk);
+        syncCampusMapView(String(targetCampusPk));
       }
     }
 

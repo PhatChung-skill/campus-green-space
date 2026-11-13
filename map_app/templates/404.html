@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Không tìm thấy trang · HCMUNRE WebGIS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: light; font-family: "Be Vietnam Pro", sans-serif; color: #16352a; background: #f7fbf8; }
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; display: flex; flex-direction: column; background: radial-gradient(ellipse at 50% 42%, #fff 0, #f7fbf8 68%); }
+    .site-header { width: 100%; min-height: 76px; display: flex; align-items: center; border-bottom: 1px solid #e1ece5; background: rgba(255,255,255,.97); }
+    .site-nav { width: min(100% - 40px, 1680px); margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .site-brand { display: inline-flex; align-items: center; gap: 12px; color: #0b3d2e; text-decoration: none; }
+    .site-brand-mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; background: #e5f4e9; font-size: 1.3rem; }
+    .site-brand-copy { display: flex; flex-direction: column; line-height: 1.2; }
+    .site-brand-copy strong { font-size: .92rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+    .site-brand-copy small { margin-top: 3px; color: #668074; font-size: .68rem; font-weight: 600; }
+    .site-links { display: flex; flex-wrap: wrap; gap: 1.2rem; }
+    .site-links a { color: #48665a; font-size: .88rem; font-weight: 650; text-decoration: none; }
+    .site-links a:hover { color: #1f7a4d; }
+    .not-found { width: min(100% - 2rem, 900px); margin: auto; padding: 4.5rem 0 5rem; text-align: center; }
+    .illustration { position: relative; width: min(100%, 390px); margin: 0 auto 1.6rem; }
+    .illustration svg { display: block; width: 100%; height: auto; }
+    .code { margin: 0; color: #1f7a4d; font-size: clamp(5rem, 18vw, 9rem); font-weight: 800; line-height: .95; letter-spacing: -.09em; }
+    h1 { margin: 1.15rem 0 .75rem; color: #0b3d2e; font-size: clamp(1.5rem, 4vw, 2.2rem); font-weight: 800; letter-spacing: -.04em; }
+    .message { max-width: 540px; margin: 0 auto; color: #61786d; font-size: 1rem; line-height: 1.8; }
+    .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .8rem; margin-top: 1.8rem; }
+    .action { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: .55rem; padding: .75rem 1.2rem; border: 1px solid #cde5d6; border-radius: 999px; background: #fff; color: #176340; font: 700 .94rem "Be Vietnam Pro", sans-serif; text-decoration: none; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+    .action:hover { transform: translateY(-2px); background: #f0f8f2; box-shadow: 0 8px 22px #0b3d2e12; color: #0b3d2e; }
+    .action-primary { border-color: #1f7a4d; background: #1f7a4d; color: #fff; }
+    .action-primary:hover { border-color: #0b3d2e; background: #0b3d2e; color: #fff; }
+    .hint { margin: 2rem 0 0; color: #82948b; font-size: .84rem; }
+    @media (max-width: 560px) { .site-header { min-height: 68px; } .site-nav { width: min(100% - 28px, 1680px); } .site-links { gap: .75rem; } .site-links a { font-size: .78rem; } .not-found { padding: 3rem 0; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="site-nav" aria-label="Điều hướng chính">
+      <a class="site-brand" href="{% url 'home' %}" aria-label="HCMUNRE WebGIS, trang chủ">
+        <span class="site-brand-mark" aria-hidden="true">🌿</span>
+        <span class="site-brand-copy"><strong>HCMUNRE WebGIS</strong><small>Không gian xanh</small></span>
+      </a>
+      <div class="site-links"><a href="{% url 'home' %}">Trang chủ</a><a href="{% url 'map_view' %}">Bản đồ khuôn viên</a></div>
+    </nav>
+  </header>
+  <main class="not-found">
+    <div class="illustration" aria-hidden="true">
+      <svg viewBox="0 0 390 205" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M31 169.5C83 145 122 193 180 164.5C232 139 285 185 359 150" stroke="#D9EADF" stroke-width="2" stroke-linecap="round" stroke-dasharray="5 9"/>
+        <path d="M55 68 132 44l70 20 72-25 62 22v91l-67 20-69-18-68 21-77-23V68Z" fill="#E8F5ED" stroke="#CDE5D6" stroke-width="2" stroke-linejoin="round"/>
+        <path d="m132 44 1 108m69-88-1 90m73-115 1 116M55 101l77 23 69-19 72 20 63-22" stroke="#CDE5D6" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M195 55c-17.7 0-32 14.3-32 32 0 23.2 32 56 32 56s32-32.8 32-56c0-17.7-14.3-32-32-32Z" fill="#1F7A4D"/>
+        <circle cx="195" cy="87" r="11" fill="#E8F5ED"/>
+        <path d="m85 133 8-15 8 15h-5v9h-6v-9h-5Zm213-40 8-15 8 15h-5v9h-6v-9h-5Z" fill="#72AE7E"/>
+        <circle cx="96" cy="159" r="4" fill="#72AE7E"/><circle cx="301" cy="133" r="4" fill="#72AE7E"/>
+      </svg>
+    </div>
+    <p class="code" aria-label="Lỗi 404">404</p>
+    <h1>Không tìm thấy trang</h1>
+    <p class="message">Đường dẫn này có thể đã thay đổi hoặc không còn tồn tại. Bạn có thể quay về trang chủ hoặc tiếp tục khám phá bản đồ khuôn viên.</p>
+    <nav class="actions" aria-label="Điều hướng khôi phục">
+      <a class="action action-primary" href="{% url 'home' %}"><span aria-hidden="true">⌂</span> Về trang chủ</a>
+      <a class="action" href="{% url 'map_view' %}"><span aria-hidden="true">⌖</span> Mở bản đồ</a>
+    </nav>
+    <p class="hint">Nếu bạn nhập địa chỉ trực tiếp, hãy kiểm tra lại đường dẫn.</p>
+  </main>
+</body>
+</html>
